@@ -1,0 +1,31 @@
+INC_DIR = /usr/include/uarm
+CFLAGS = -fPIC
+CPU = -mcpu=arm7tdmi
+
+SYSLIB = /usr/include/uarm/crtso.o /usr/include/uarm/libuarm.o
+ELFSCRIPT = /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x
+
+CC = arm-none-eabi-gcc
+LD = arm-none-eabi-ld
+ELF = elf2uarm
+
+p1test.core.uarm: p1test.elf
+	$(ELF) -k p1test.elf
+
+p1test.elf: mikabooq.o p1test.o
+	$(LD) -T $(ELFSCRIPT) -o p1test.elf $(SYSLIB) p1test.o mikabooq.o -I $(INC_DIR) -I .
+
+p1test.o: p1test.c
+	$(CC) $(CPU) -c -o p1test.o p1test.c -include stdint.h -I $(INC_DIR) -I .
+
+mikabooq.o: mikabooq.c mikabooq.h
+	$(CC) $(CPU) -c $(CFLAGS) -o mikabooq.o mikabooq.c -I $(INC_DIR) -I .
+
+static: mikabooq.o
+	ar rcs mikabooq.a mikabooq.o
+
+shared: mikabooq.o
+	$(CC) $(CPU) -shared -Wl,-soname,mikabooq.so -o libmean.so mikabooq.o
+
+clean:
+	rm -f *.o *.elf *.uarm *.a *.so
