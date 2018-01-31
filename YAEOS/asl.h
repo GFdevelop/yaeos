@@ -3,7 +3,6 @@
 
 #include <uARMtypes.h>
 #include <const.h>
-#include <pcb.h>
 
 typedef struct semd_t {
 	struct semd_t *s_next;
@@ -30,4 +29,5 @@ void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg);
 //outChildBlocked(pcb_t *p);
 
 void initASL();
+
 #endif
