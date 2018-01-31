@@ -4,7 +4,7 @@
 #include "asl.h"
 
 pcb_t pcbFree_table[MAXPROC];
-pcb_t *pcbfree_h;
+pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 /*
 void initPcbs(){
     pcb_t *temp;
@@ -18,11 +18,11 @@ void initPcbs(){
 }*/
 
 void initPcbs(){
-	pcbfree_h = &pcbFree_table[0];
-	int size;
-	if ((size = sizeof(pcbFree_table)/sizeof(pcbFree_table[0])) < 20) {
+	int size = pcbfree_h-pcbFree_table-1;
+	if (size >= 0) {
+		pcbfree_h = pcbfree_h-1;
 		initPcbs();
-		(pcbFree_table[size]).p_next = &pcbFree_table[size+1];
+		if (size != 19)	(pcbFree_table[size]).p_next = &pcbFree_table[size+1];
 		//*(pcbFree_table[size]).p_parent = NULL;
 		//*(pcbFree_table[size]).p_first_child = NULL;
 		//*(pcbFree_table[size]).p_sib = NULL;
@@ -46,8 +46,7 @@ void freePcb(pcb_t *p){
 }
 
 pcb_t *allocPcb(){
-	int size = sizeof(pcbFree_table)/sizeof(pcbfree_h);
-	if (size == 0) return NULL;
+	if (pcbfree_h == &pcbFree_table[MAXPROC]) return NULL;
 	else {
 		pcb_t * temp = pcbfree_h;
 		pcbfree_h = pcbfree_h->p_next;
