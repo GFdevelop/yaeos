@@ -30,7 +30,7 @@ pcb_t *allocPcb();
 /* Insert the element pointed by *p in the process queue pointed by **head.
    Insertion have to respect the priority of each PCB.
    Process queue must be descending sorted according to PCB's priority. */
-void insertProcQ(pcb_t **head, pcb_t *t);
+void insertProcQ(pcb_t **head, pcb_t *p);
 
 /* Return the element in the head of queue pointed by pointer passed as pointer, without removing it.
    Return NULL if the queue is empty. */

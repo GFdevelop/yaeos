@@ -41,8 +41,30 @@ pcb_t *allocPcb(){
 	}
 }
 
-void insertProcQ(pcb_t **head, pcb_t *t){
-	
+void insertProcQ(pcb_t **head, pcb_t *p){
+	if (p != NULL){
+		if (*head == NULL){
+			*head = p;
+			(*head)->p_next = NULL;
+		}
+		else {
+			if (p->p_priority > (*head)->p_priority){
+				p->p_next = *head;
+				*head = p;
+			}
+			else if (p->p_priority < (*head)->p_priority){
+				p->p_next = (*head)->p_next;
+				(*head)->p_next = p;
+			}
+			else {
+				if ((*head)->p_next == NULL){
+					(*head)->p_next = p;
+					p->p_next = NULL;
+				}
+				else insertProcQ(&(*head)->p_next, p);
+			}
+		}
+	}
 }
 
 pcb_t *headProcQ(pcb_t *head){
