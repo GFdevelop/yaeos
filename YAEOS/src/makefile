@@ -13,8 +13,8 @@ AR = arm-none-eabi-ar
 phase1: pcb.o p1test.o asl.o
 	$(LD) -T $(ELFSCRIPT) -o phase1 $(SYSLIB) p1test.o pcb.o asl.o -I $(INC_DIR) -I .
 
-p1test.o: p1test.c
-	$(CC) $(CPU) $(CFLAGS) -c p1test.c -o p1test.o -I $(INC_DIR) -I .
+p1test.o: ../example/p1test.c
+	$(CC) $(CPU) $(CFLAGS) -c ../example/p1test.c -o p1test.o -I $(INC_DIR) -I .
 
 pcb.o: pcb.c
 	$(CC) $(CPU) $(CFLAGS) -c pcb.c -o pcb.o -I $(INC_DIR) -I .

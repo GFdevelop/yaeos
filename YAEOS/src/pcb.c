@@ -5,17 +5,6 @@
 
 pcb_t pcbFree_table[MAXPROC];
 pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
-/*
-void initPcbs(){
-    pcb_t *temp;
-    int i; 
-    pcbfree_h -> p_next = pcbFree_table[0];
-    temp = pcbFree_table[0];
-    for(i = 1; i < MAXPROC; i++){
-        temp -> p_next = pcbFree_table[i];
-        temp = temp -> p_next;
-    }  
-}*/
 
 void initPcbs(){
 	int size = pcbfree_h-pcbFree_table-1;
@@ -28,21 +17,15 @@ void initPcbs(){
 		//*(pcbFree_table[size]).p_sib = NULL;
 	}
 }
-/*
+
 void freePcb(pcb_t *p){
-	int size = sizeof(pcbFree_table)/sizeof(pcbfree_h);
-	if (size < 20) {
-		if (*(pcbFree_table[size]).p_first_child != NULL) freePcb(p);
-		else *(pcbFree_table[size]).p_first_child = p;
+	if (p != NULL){
+		int size = pcbfree_h-pcbFree_table;
+		if ((size < 20) && (size > 0)){
+			p->p_next = pcbfree_h;
+			pcbfree_h = p;
+		}
 	}
-}*/
-/*
-pcb_t *allocPcb(){
-	
-}
-*/
-void freePcb(pcb_t *p){
-	
 }
 
 pcb_t *allocPcb(){
