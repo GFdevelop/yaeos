@@ -52,12 +52,12 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			if (p->p_priority > (*head)->p_priority){
 				p->p_next = *head;
 				*head = p;
-			}
+			}/*
 			else if (p->p_priority < (*head)->p_priority){
 				if ((*head)->p_next != NULL) p->p_next = (*head)->p_next;
 				else p->p_next = NULL;
 				(*head)->p_next = p;
-			}
+			}*/
 			else {
 				if ((*head)->p_next == NULL){
 					(*head)->p_next = p;
@@ -109,15 +109,61 @@ void forallProcQ(pcb_t *head, void fun(pcb_t *pcb, void *), void *arg){
 }
 
 void insertChild(pcb_t *parent, pcb_t *p){
-	
+	if ((parent != NULL) && (p != NULL)){
+		if (parent->p_first_child == NULL) {
+			p->p_sib = NULL;
+			parent->p_first_child = p;
+		}
+		else if (parent->p_first_child->p_next == NULL){
+			parent->p_first_child->p_next = p;
+			//parent->p_first_child->p_sib = p;
+			//p->p_next = parent->p_first_child;
+			p->p_sib = parent->p_first_child;
+		}
+		else {
+			//p->p_next = parent->p_first_child;
+			p->p_sib = parent->p_first_child->p_sib;
+			parent->p_first_child->p_sib->p_next = p;
+			parent->p_first_child->p_sib = p;
+		}
+		p->p_next = NULL;
+		p->p_parent = parent;
+	}
 }
 
 pcb_t *removeChild(pcb_t *p){
-	pcb_t * temp;
-	return temp;
+	if ((p == NULL) || (p->p_first_child == NULL)) return NULL;
+	else  {
+		pcb_t * ret = p->p_first_child;
+		if (ret->p_next == NULL) p->p_first_child = NULL;
+		else {
+			//if (ret->p_next != ret->p_sib) {
+				//ret->p_sib->p_next = ret->p_next;
+				ret->p_next->p_sib = ret->p_sib;
+			//}
+			p->p_first_child = ret->p_next;
+		}
+		ret->p_next = NULL;
+		ret->p_sib = NULL;
+		ret->p_parent = NULL;
+		return ret;
+	}
 }
 
 pcb_t *outChild(pcb_t *p){
-	pcb_t * temp;
-	return temp;
+	if ((p == NULL) || (p->p_parent == NULL) || (p->p_parent->p_first_child == NULL)) return NULL;
+	else if (p == p->p_parent->p_first_child){
+		if (p->p_sib != NULL) p->p_sib->p_next = p->p_next;
+		if (p->p_next != NULL) p->p_next->p_sib = p->p_sib;
+		p->p_parent->p_first_child = p->p_next;
+		return p;
+	}
+	else {
+		pcb_t * son = p->p_parent->p_first_child;
+		p->p_parent->p_first_child = son->p_next;
+		pcb_t * ret = outChild(p);
+		if (ret != son) p->p_parent->p_first_child = son;
+		if (ret == p) p->p_parent = NULL;
+		return ret;
+	}
 }

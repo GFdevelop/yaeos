@@ -1,5 +1,4 @@
 INC_DIR = /usr/include/uarm
-CFLAGS = -fPIC
 CPU = -mcpu=arm7tdmi -Wall
 BIN_DIR = ../bin/
 
@@ -14,10 +13,10 @@ phase1: pcb.o p1test.o asl.o
 	$(LD) -T $(ELFSCRIPT) -o phase1 $(SYSLIB) p1test.o pcb.o asl.o -I $(INC_DIR) -I .
 
 p1test.o: ../example/p1test.c
-	$(CC) $(CPU) $(CFLAGS) -c ../example/p1test.c -o p1test.o -I $(INC_DIR) -I .
+	$(CC) $(CPU) -c ../example/p1test.c -o p1test.o -I $(INC_DIR) -I .
 
 pcb.o: pcb.c
-	$(CC) $(CPU) $(CFLAGS) -c pcb.c -o pcb.o -I $(INC_DIR) -I .
+	$(CC) $(CPU) -c pcb.c -o pcb.o -I $(INC_DIR) -I .
 
 asl.o: asl.c
-	$(CC) $(CPU) $(CFLAGS) -c asl.c -o asl.o -I $(INC_DIR) -I .
+	$(CC) $(CPU) -c asl.c -o asl.o -I $(INC_DIR) -I .
