@@ -114,19 +114,13 @@ void insertChild(pcb_t *parent, pcb_t *p){
 			p->p_sib = NULL;
 			parent->p_first_child = p;
 		}
-		else if (parent->p_first_child->p_next == NULL){
-			parent->p_first_child->p_next = p;
-			//parent->p_first_child->p_sib = p;
-			//p->p_next = parent->p_first_child;
-			p->p_sib = parent->p_first_child;
-		}
 		else {
-			//p->p_next = parent->p_first_child;
-			p->p_sib = parent->p_first_child->p_sib;
-			parent->p_first_child->p_sib->p_next = p;
-			parent->p_first_child->p_sib = p;
+			pcb_t * son = parent->p_first_child;
+			parent->p_first_child = son->p_sib;
+			insertChild(parent,p);
+			parent->p_first_child = son;
+			if (son->p_sib == NULL) son->p_sib = p;
 		}
-		p->p_next = NULL;
 		p->p_parent = parent;
 	}
 }
@@ -135,15 +129,7 @@ pcb_t *removeChild(pcb_t *p){
 	if ((p == NULL) || (p->p_first_child == NULL)) return NULL;
 	else  {
 		pcb_t * ret = p->p_first_child;
-		if (ret->p_next == NULL) p->p_first_child = NULL;
-		else {
-			//if (ret->p_next != ret->p_sib) {
-				//ret->p_sib->p_next = ret->p_next;
-				ret->p_next->p_sib = ret->p_sib;
-			//}
-			p->p_first_child = ret->p_next;
-		}
-		ret->p_next = NULL;
+		p->p_first_child = ret->p_sib;
 		ret->p_sib = NULL;
 		ret->p_parent = NULL;
 		return ret;
@@ -151,19 +137,18 @@ pcb_t *removeChild(pcb_t *p){
 }
 
 pcb_t *outChild(pcb_t *p){
-	if ((p == NULL) || (p->p_parent == NULL) || (p->p_parent->p_first_child == NULL)) return NULL;
-	else if (p == p->p_parent->p_first_child){
-		if (p->p_sib != NULL) p->p_sib->p_next = p->p_next;
-		if (p->p_next != NULL) p->p_next->p_sib = p->p_sib;
-		p->p_parent->p_first_child = p->p_next;
+	if ((p==NULL) || (p->p_parent==NULL)) return NULL;
+	else if (p->p_parent->p_first_child == p){
+		p->p_parent->p_first_child = p->p_sib;
+		//p->p_sib = NULL;
 		return p;
 	}
 	else {
 		pcb_t * son = p->p_parent->p_first_child;
-		p->p_parent->p_first_child = son->p_next;
+		p->p_parent->p_first_child = son->p_sib;
 		pcb_t * ret = outChild(p);
-		if (ret != son) p->p_parent->p_first_child = son;
-		if (ret == p) p->p_parent = NULL;
+		p->p_parent->p_first_child = son;
+		if (son->p_sib == ret) son->p_sib = p;
 		return ret;
 	}
 }
