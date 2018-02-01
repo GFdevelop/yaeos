@@ -113,6 +113,7 @@ void insertChild(pcb_t *parent, pcb_t *p){
 		if (parent->p_first_child == NULL) {
 			p->p_sib = NULL;
 			parent->p_first_child = p;
+			p->p_parent = parent;
 		}
 		else {
 			pcb_t * son = parent->p_first_child;
@@ -121,7 +122,6 @@ void insertChild(pcb_t *parent, pcb_t *p){
 			parent->p_first_child = son;
 			if (son->p_sib == NULL) son->p_sib = p;
 		}
-		p->p_parent = parent;
 	}
 }
 
@@ -137,18 +137,19 @@ pcb_t *removeChild(pcb_t *p){
 }
 
 pcb_t *outChild(pcb_t *p){
-	if ((p==NULL) || (p->p_parent==NULL)) return NULL;
-	else if (p->p_parent->p_first_child == p){
+	if ((p == NULL) || (p->p_parent == NULL) || (p->p_parent->p_first_child == NULL)) return NULL;
+	else if (p == p->p_parent->p_first_child){
 		p->p_parent->p_first_child = p->p_sib;
 		//p->p_sib = NULL;
+		//p->p_parent = NULL;
 		return p;
 	}
 	else {
 		pcb_t * son = p->p_parent->p_first_child;
 		p->p_parent->p_first_child = son->p_sib;
 		pcb_t * ret = outChild(p);
+		if (p->p_parent->p_first_child == p->p_sib) son->p_sib = p->p_parent->p_first_child;
 		p->p_parent->p_first_child = son;
-		if (son->p_sib == ret) son->p_sib = p;
 		return ret;
 	}
 }
