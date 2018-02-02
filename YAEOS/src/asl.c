@@ -8,18 +8,33 @@ semd_t *semdFree_h = &semd_table[MAXSEMD];
 semd_t *semdhash[ASHDSIZE];
 
 int insertBlocked(int *key, pcb_t *p){
-	long k = (*key)*61803398875;
-	int hash = (8*(k-(int)k))-(10^10);
-	if (semdhash[hash] == NULL){
-		if (semdFree_h == &semd_table[MAXSEMD]) return -1;
-		else {
-			semdhash[hash] = semdFree_h;
-			semdhash[hash]->s_next = NULL;
-			semdFree_h = semdFree_h+1;
+	if (p == NULL) return -1;
+	else {
+		unsigned int k = (unsigned long int)key;
+		int hash = (*key/4)%8;
+		int ret = 0;
+		if (semdhash[hash] == NULL){
+			if (semdFree_h == &semd_table[MAXSEMD]) return -1;
+			else {
+				semdhash[hash] = semdFree_h;
+				semdFree_h = semdFree_h->s_next;
+				semdhash[hash]->s_next = NULL;
+				semdhash[hash]->s_key = key;
+				insertProcQ(&(*semdhash)[hash].s_procQ,p);
+			}
 		}
+		else if (semdhash[hash]->s_key != key){
+			semd_t * prev = semdhash[hash];
+			semdhash[hash] = semdhash[hash]->s_next;
+			ret = insertBlocked(key,p);
+			if ((semdhash[hash]->s_key == key) && (prev->s_next == NULL)) prev->s_next = semdhash[hash];
+			semdhash[hash] = prev;
+		}
+		else {
+			insertProcQ(&(*semdhash)[hash].s_procQ,p);
+		}
+		return ret;
 	}
-	insertProcQ(&(*semdhash)[hash].s_procQ,p);
-	return 0;
 	
 	/*if (semdFree_h == &semd_table[MAXSEMD]) return -1;
 	else {
@@ -39,8 +54,8 @@ int insertBlocked(int *key, pcb_t *p){
 }
 
 pcb_t *headBlocked(int *key){
-	long k = (*key)*61803398875;
-	int hash = (8*(k-(int)k))-(10^10);
+	unsigned int k = (unsigned long int)key;
+	int hash = (*key/4)%8;
 	if (semdhash[hash] == NULL) return NULL;
 	else {
 		headProcQ((*semdhash)[hash].s_procQ);
@@ -53,9 +68,17 @@ pcb_t* removeBlocked(int *key){
 }
 
 void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
-	long k = (*key)*61803398875;
-	int hash = (8*(k-(int)k))-(10^10);
-	if (semdhash[hash] != NULL) forallProcQ((*semdhash)[hash].s_procQ, fun, arg);
+	unsigned int k = (unsigned long int)key;
+	int hash = (*key/4)%8;
+	if (semdhash[hash] != NULL) {
+		if (semdhash[hash]->s_key == key) forallProcQ((*semdhash)[hash].s_procQ, fun, arg);
+		else {
+			semd_t * prev = semdhash[hash];
+			semdhash[hash] = semdhash[hash]->s_next;
+			forallBlocked(key, fun, arg);
+			semdhash[hash] = prev;
+		}
+	}
 }
 
 //outChildBlocked(pcb_t *p);
