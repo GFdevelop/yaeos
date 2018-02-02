@@ -140,8 +140,7 @@ pcb_t *outChild(pcb_t *p){
 	if ((p == NULL) || (p->p_parent == NULL) || (p->p_parent->p_first_child == NULL)) return NULL;
 	else if (p == p->p_parent->p_first_child){
 		p->p_parent->p_first_child = p->p_sib;
-		//p->p_sib = NULL;
-		//p->p_parent = NULL;
+		p->p_sib = NULL;
 		return p;
 	}
 	else {
