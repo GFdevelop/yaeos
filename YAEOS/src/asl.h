@@ -26,7 +26,7 @@ pcb_t* removeBlocked(int *key);
 
 void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg);
 
-//outChildBlocked(pcb_t *p);
+void outChildBlocked(pcb_t *p);
 
 void initASL();
 

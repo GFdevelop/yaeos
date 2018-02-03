@@ -8,18 +8,19 @@ semd_t *semdFree_h = &semd_table[MAXSEMD];
 semd_t *semdhash[ASHDSIZE];
 
 int insertBlocked(int *key, pcb_t *p){
-	if (p == NULL) return -1;
+	int ret = 0;
+	if (p == NULL) ret = -1;
 	else {
-		unsigned int k = (unsigned long int)key;
 		int hash = (*key/4)%8;
-		int ret = 0;
 		if (semdhash[hash] == NULL){
-			if (semdFree_h == &semd_table[MAXSEMD]) return -1;
+			 //il puntatore salta fuori dall'intervallo, vedere la remove
+			if ((semdFree_h >= &semd_table[MAXSEMD]) || (semdFree_h < semd_table)) ret = -1;
 			else {
 				semdhash[hash] = semdFree_h;
 				semdFree_h = semdFree_h->s_next;
 				semdhash[hash]->s_next = NULL;
 				semdhash[hash]->s_key = key;
+				p->p_semKey = key;
 				insertProcQ(&(*semdhash)[hash].s_procQ,p);
 			}
 		}
@@ -31,44 +32,45 @@ int insertBlocked(int *key, pcb_t *p){
 			semdhash[hash] = prev;
 		}
 		else {
+			p->p_semKey = key;
 			insertProcQ(&(*semdhash)[hash].s_procQ,p);
 		}
-		return ret;
 	}
-	
-	/*if (semdFree_h == &semd_table[MAXSEMD]) return -1;
-	else {
-		if (semdhash[hash] == NULL){
-			semdhash[hash] = semdFree_h;
-			semdFree_h->s_next = NULL;
-		}
-		else {
-			semd_t * tmp = semdhash[hash];
-			semdhash[hash] = semdFree_h;
-			semdFree_h->s_next = tmp;
-		}
-		semdFree_h = semdFree_h+1;
-		insertProcQ(&(*semdhash)[hash].s_procQ,p);
-		return 0;
-	}*/
+	return ret;
 }
 
 pcb_t *headBlocked(int *key){
-	unsigned int k = (unsigned long int)key;
 	int hash = (*key/4)%8;
 	if (semdhash[hash] == NULL) return NULL;
-	else {
-		headProcQ((*semdhash)[hash].s_procQ);
-	}
+	else return headProcQ((*semdhash)[hash].s_procQ);
 }
 
 pcb_t* removeBlocked(int *key){
-	pcb_t * temp;
-	return temp;
+	int hash = (*key/4)%8;
+	pcb_t * ret = NULL;
+	if (semdhash[hash] == NULL) ret = NULL;
+	else if (semdhash[hash]->s_key == key) {
+		ret = removeProcQ(&(*semdhash)[hash].s_procQ);
+		if (semdhash[hash]->s_procQ == NULL){
+			semdhash[hash]->s_key = NULL;
+			semd_t * next = semdhash[hash]->s_next;
+			semdhash[hash]->s_next = semdFree_h;
+			//questo credo che fa saltare il puntatore fuori dalla lista libera
+			semdFree_h = semdhash[hash];
+			semdhash[hash] = next;
+		}
+	}
+	else {
+		semd_t * prev = semdhash[hash];
+		semdhash[hash] = semdhash[hash]->s_next;
+		ret = removeBlocked(key);
+		if (semdhash[hash] != prev->s_next) prev->s_next = semdhash[hash];
+		semdhash[hash] = prev;
+	}
+	return ret;
 }
 
 void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
-	unsigned int k = (unsigned long int)key;
 	int hash = (*key/4)%8;
 	if (semdhash[hash] != NULL) {
 		if (semdhash[hash]->s_key == key) forallProcQ((*semdhash)[hash].s_procQ, fun, arg);
@@ -81,14 +83,27 @@ void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
 	}
 }
 
-//outChildBlocked(pcb_t *p);
+void outChildBlocked(pcb_t *p){
+	if (p != NULL){
+		int hash = (*p->p_semKey/4)%8;
+		if (semdhash[hash] != NULL) {
+			if (semdhash[hash]->s_key == p->p_semKey) removeBlocked(p->p_semKey);
+			else {
+				semd_t * prev = semdhash[hash];
+				semdhash[hash] = semdhash[hash]->s_next;
+				outChildBlocked(p);
+				semdhash[hash] = prev;
+			}
+		}
+	}
+}
 
 void initASL(){
-	int size = semdFree_h-semd_table-1;
-	if (size >= 0) {
+	int size = semdFree_h-semd_table;
+	if (size > 0) {
 		semdFree_h = semdFree_h-1;
 		initASL();
-		if (size < 19)	(semd_table[size]).s_next = &semd_table[size+1];
-		else semd_table[size].s_next = NULL;
+		if (size < 20)	(semd_table[size-1]).s_next = &semd_table[size];
+		else semd_table[size-1].s_next = NULL;
 	}
 }
