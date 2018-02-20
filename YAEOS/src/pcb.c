@@ -1,3 +1,14 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * *
+ * YAEOS' phase 1 implementation proposed by     *
+ * - Francesco Fornari 							 *
+ * - Gabriele Fulgaro							 *
+ * - Mattia Polverini							 *
+ * 												 *
+ * Operating System course						 *
+ * A.A. 2017/2018 								 *
+ * Alma Mater Studiorum - University of Bologna  *
+ * * * * * * * * * * * * * * * * * * * * * * * * */
+   
 #include <uARMconst.h>
 #include "const.h"
 #include "pcb.h"

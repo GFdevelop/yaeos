@@ -16,8 +16,11 @@ typedef struct pcb_t {
 
 /**** PCB queue management ****/
 
-/* Initialize pcbFree so that it contains all the elements of pcbFree_table.
-   It will be called only once during data structure initialization. */
+/* 
+Initializes the pcbFree list in order to contain all the elements of the
+pcbFree_table. This method will be invoked only once in the 
+initialization phase of the data structure
+*/
 void initPcbs();
 
 /* Insert the PCB pointed by *p in the free PCB list */
