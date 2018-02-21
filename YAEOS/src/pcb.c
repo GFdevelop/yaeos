@@ -8,19 +8,23 @@ pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 
 void initPcbs(){
 	int size = pcbfree_h-pcbFree_table-1;	//differenza fra due indirizzi di memoria scelta progettuale 1
-	if (size < 0) return;
-	else {
+	if (size >= 0) {
 		pcbfree_h = pcbfree_h-1;	//index of array
 		initPcbs();
-		if (size < MAXPROC - 1)	(pcbFree_table[size]).p_next = &pcbFree_table[size+1];
-		else pcbFree_table[size].p_next = NULL;
+		(pcbFree_table[size]).p_next = (size < MAXPROC - 1) ? &pcbFree_table[size+1] : NULL;
 	}
 }
-
+/*
+void initPcbs(){
+	pcbfree_h = pcbfree_h-1;	//index of array
+	int size = pcbfree_h-pcbFree_table;	//differenza fra due indirizzi di memoria scelta progettuale 1
+	(pcbFree_table[size]).p_next = (pcbfree_h < &pcbFree_table[MAXPROC]) ? &pcbFree_table[size+1] : NULL;
+	if (pcbfree_h > pcbFree_table) initPcbs();
+}
+*/
 void freePcb(pcb_t *p){
 	if (p != NULL){
-		int size = pcbfree_h-pcbFree_table-1;
-		if (size < MAXPROC){
+		if (pcbfree_h-pcbFree_table-1 < MAXPROC){
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
 		}
@@ -50,11 +54,10 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			p->p_next = *head;
 			*head = p;
 		}
-		else if ((*head)->p_next == NULL){
-			(*head)->p_next = p;
-			p->p_next = NULL;
+		else {
+			insertProcQ(&(*head)->p_next, p);
+			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
 		}
-		else insertProcQ(&(*head)->p_next, p);
 	}
 }
 
@@ -106,19 +109,13 @@ pcb_t *removeChild(pcb_t *p){
 	else  {
 		pcb_t * ret = p->p_first_child;
 		p->p_first_child = ret->p_sib;
-		ret->p_sib = NULL;
-		ret->p_parent = NULL;
 		return ret;
 	}
 }
 
 pcb_t *outChild(pcb_t *p){
 	if ((p == NULL) || (p->p_parent == NULL) || (p->p_parent->p_first_child == NULL)) return NULL;
-	else if (p == p->p_parent->p_first_child){
-		p->p_parent->p_first_child = p->p_sib;
-		p->p_sib = NULL;
-		return p;
-	}
+	else if (p == p->p_parent->p_first_child) return removeChild(p->p_parent);
 	else {
 		pcb_t * son = p->p_parent->p_first_child;
 		p->p_parent->p_first_child = son->p_sib;
