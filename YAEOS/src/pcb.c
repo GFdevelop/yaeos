@@ -22,17 +22,36 @@ See point [1] of design_choises.txt.
 pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 
 void initPcbs(){
+<<<<<<< HEAD
 	int size = pcbfree_h - pcbFree_table;	//From the difference between the two pointer we obtain the actual number of elements.
 	if (pcbfree_h > pcbFree_table){
 		pcbfree_h = pcbfree_h - 1;	//The pointer is used as index for the array.
 		initPcbs();
 		pcbFree_table[size-1].p_next = (size < MAXPROC) ? &pcbFree_table[size] : NULL;
+=======
+	int size = pcbfree_h-pcbFree_table-1;	//differenza fra due indirizzi di memoria scelta progettuale 1
+	if (size >= 0) {
+		pcbfree_h = pcbfree_h-1;	//index of array
+		initPcbs();
+		(pcbFree_table[size]).p_next = (size < MAXPROC - 1) ? &pcbFree_table[size+1] : NULL;
+>>>>>>> Ottimizzazioni2
 	}
 }
-
+/*
+void initPcbs(){
+	pcbfree_h = pcbfree_h-1;	//index of array
+	int size = pcbfree_h-pcbFree_table;	//differenza fra due indirizzi di memoria scelta progettuale 1
+	(pcbFree_table[size]).p_next = (pcbfree_h < &pcbFree_table[MAXPROC]) ? &pcbFree_table[size+1] : NULL;
+	if (pcbfree_h > pcbFree_table) initPcbs();
+}
+*/
 void freePcb(pcb_t *p){
 	if (p != NULL){
+<<<<<<< HEAD
 		if ((pcbfree_h - pcbFree_table - 1) < MAXPROC){	//Included to avoid not allowed insertion of pcb_t
+=======
+		if (pcbfree_h-pcbFree_table-1 < MAXPROC){
+>>>>>>> Ottimizzazioni2
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
 		}
@@ -64,6 +83,13 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			insertProcQ(&(*head)->p_next, p);	
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
 		}
+<<<<<<< HEAD
+=======
+		else {
+			insertProcQ(&(*head)->p_next, p);
+			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
+		}
+>>>>>>> Ottimizzazioni2
 	}
 }
 
