@@ -24,11 +24,7 @@ int insertBlocked(int *key, pcb_t *p){
 	else {
 		int hash = (*key/2)%ASHDSIZE;
 		if (semdhash[hash] == NULL){
-			//int size = semdFree_h-semd_table-1;
-			//if (size >= MAXSEMD) ret = -1;
-			//if (semdFree_h == NULL) ret = -1;
-			 //il puntatore salta fuori dall'intervallo, vedere la remove
-			if ((semdFree_h >= &semd_table[MAXSEMD]) || (semdFree_h < semd_table)) ret = -1;
+			if (semdFree_h == NULL) ret = -1; //il puntatore salta fuori dall'intervallo, vedere la remove
 			else {
 				semdhash[hash] = semdFree_h;
 				semdFree_h = semdFree_h->s_next;
@@ -42,18 +38,15 @@ int insertBlocked(int *key, pcb_t *p){
 			semd_t * prev = semdhash[hash];
 			semdhash[hash] = semdhash[hash]->s_next;
 			ret = insertBlocked(key,p);
-			if ((semdhash[hash]->s_key == key) && (prev->s_next == NULL)) prev->s_next = semdhash[hash];
+			if (semdhash[hash] != prev->s_next) prev->s_next = semdhash[hash];
 			semdhash[hash] = prev;
 		}
-		else {
-			p->p_semKey = key;
-			insertProcQ(&(*semdhash)[hash].s_procQ,p);
-		}
+		else insertProcQ(&(*semdhash)[hash].s_procQ,p);
 	}
 	return ret;
 }
 
-pcb_t *headBlocked(int *key){
+pcb_t *headBlocked(int *key){ 
 	int hash = (*key/2)%ASHDSIZE;
 	if (semdhash[hash] == NULL) return NULL;
 	else return headProcQ((*semdhash)[hash].s_procQ);
@@ -67,9 +60,8 @@ pcb_t* removeBlocked(int *key){
 		ret = removeProcQ(&(*semdhash)[hash].s_procQ);
 		if (semdhash[hash]->s_procQ == NULL){
 			semdhash[hash]->s_key = NULL;
-			semd_t * next = semdhash[hash]->s_next;
+			semd_t * next = semdhash[hash]->s_next; //questo credo che fa saltare il puntatore fuori dalla lista libera
 			semdhash[hash]->s_next = semdFree_h;
-			//questo credo che fa saltare il puntatore fuori dalla lista libera
 			semdFree_h = semdhash[hash];
 			semdhash[hash] = next;
 		}
@@ -113,11 +105,7 @@ void outChildBlocked(pcb_t *p){
 }
 
 void initASL(){
-	int size = semdFree_h-semd_table;
-	if (size > 0) {
-		semdFree_h = semdFree_h-1;
-		initASL();
-		if (size < MAXSEMD)	(semd_table[size-1]).s_next = &semd_table[size];
-		else semd_table[size-1].s_next = NULL;
-	}
+	semdFree_h = semdFree_h-1;
+	semdFree_h->s_next = (semdFree_h < &semd_table[MAXSEMD-1]) ? semdFree_h+1 : NULL;
+	if (semdFree_h > semd_table) initASL();
 }
