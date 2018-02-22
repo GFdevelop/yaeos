@@ -7,27 +7,17 @@ pcb_t pcbFree_table[MAXPROC];
 pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 
 void initPcbs(){
-	int size = pcbfree_h-pcbFree_table;	//differenza fra due indirizzi di memoria scelta progettuale 1
-	if (pcbfree_h > pcbFree_table) {
-		pcbfree_h = pcbfree_h-1;	//index of array
-		initPcbs();
-		(pcbFree_table[size-1]).p_next = (size < MAXPROC) ? &pcbFree_table[size] : NULL;
-	}
-}
-/*
-void initPcbs(){
 	pcbfree_h = pcbfree_h-1;	//index of array
-	int size = pcbfree_h-pcbFree_table;	//differenza fra due indirizzi di memoria scelta progettuale 1
-	(pcbFree_table[size]).p_next = (pcbfree_h < &pcbFree_table[MAXPROC]) ? &pcbFree_table[size+1] : NULL;
+	pcbfree_h->p_next = (pcbfree_h < &pcbFree_table[MAXPROC-1]) ? pcbfree_h+1 : NULL;
 	if (pcbfree_h > pcbFree_table) initPcbs();
 }
-*/
+
 void freePcb(pcb_t *p){
 	if (p != NULL){
-		if (pcbfree_h-pcbFree_table-1 < MAXPROC){
+		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//questo if è inutile, sostituirlo con uno valido
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
-		}
+		//}
 	}
 }
 
