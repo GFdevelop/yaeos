@@ -125,12 +125,17 @@ pcb_t* removeProcQ(pcb_t **head){
 
 /*
 <<<<<<< HEAD
+<<<<<<< HEAD
 For more information, see point [2] in design_choices.txt
 */
 =======
 +For more information, see point [2] in design_choices.txt
 +*/
 >>>>>>> patched
+=======
+For more information, see point [2] in design_choices.txt
+*/
+>>>>>>> fix merge
 pcb_t* outProcQ(pcb_t **head, pcb_t *p){	//Four possible scenarios...
 	if ((p == NULL) || (*head == NULL)) return NULL;	//...p is NULL or list is empty/p is not found
 	else if (*head == p) return removeProcQ(&(*head)); //...p is the element pointed by head
@@ -146,12 +151,17 @@ void forallProcQ(pcb_t *head, void fun(pcb_t *pcb, void *), void *arg){
 
 /*
 <<<<<<< HEAD
+<<<<<<< HEAD
 See desing_choices.txt point [3]
 */
 =======
 +See desing_choices.txt point [3]
 +*/
 >>>>>>> patched
+=======
+See desing_choices.txt point [3]
+*/
+>>>>>>> fix merge
 void insertChild(pcb_t *parent, pcb_t *p){
 	if ((parent != NULL) && (p != NULL)){
 		if (parent->p_first_child == NULL){	//parent has no child
@@ -159,10 +169,14 @@ void insertChild(pcb_t *parent, pcb_t *p){
 			parent->p_first_child = p;
 			p->p_parent = parent;
 <<<<<<< HEAD
+<<<<<<< HEAD
 		}else{	//parent has already one or more children
 =======
 		}else {	//parent has already one or more children
 >>>>>>> patched
+=======
+		}else{	//parent has already one or more children
+>>>>>>> fix merge
 			pcb_t *son = parent->p_first_child;
 			parent->p_first_child = son->p_sib;
 			insertChild(parent,p);
