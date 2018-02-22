@@ -22,34 +22,6 @@ See point [1] of design_choises.txt.
 pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 
 void initPcbs(){
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	int size = pcbfree_h - pcbFree_table;	//From the difference between the two pointer we obtain the actual number of elements.
-	if (pcbfree_h > pcbFree_table){
-		pcbfree_h = pcbfree_h - 1;	//The pointer is used as index for the array.
-		initPcbs();
-		pcbFree_table[size-1].p_next = (size < MAXPROC) ? &pcbFree_table[size] : NULL;
-=======
-	int size = pcbfree_h-pcbFree_table-1;	//differenza fra due indirizzi di memoria scelta progettuale 1
-	if (size >= 0) {
-		pcbfree_h = pcbfree_h-1;	//index of array
-		initPcbs();
-		(pcbFree_table[size]).p_next = (size < MAXPROC - 1) ? &pcbFree_table[size+1] : NULL;
->>>>>>> Ottimizzazioni2
-=======
-	int size = pcbfree_h-pcbFree_table;	//differenza fra due indirizzi di memoria scelta progettuale 1
-	if (pcbfree_h > pcbFree_table) {
-		pcbfree_h = pcbfree_h-1;	//index of array
-		initPcbs();
-		(pcbFree_table[size-1]).p_next = (size < MAXPROC) ? &pcbFree_table[size] : NULL;
->>>>>>> bugfix initPcbs()
-	}
-}
-/*
-void initPcbs(){
-=======
->>>>>>> merge with master
 	pcbfree_h = pcbfree_h-1;	//index of array
 	pcbfree_h->p_next = (pcbfree_h < &pcbFree_table[MAXPROC-1]) ? pcbfree_h+1 : NULL;
 	if (pcbfree_h > pcbFree_table) initPcbs();
@@ -57,19 +29,7 @@ void initPcbs(){
 
 void freePcb(pcb_t *p){
 	if (p != NULL){
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-		if ((pcbfree_h - pcbFree_table - 1) < MAXPROC){	//Included to avoid not allowed insertion of pcb_t
-=======
-		if (pcbfree_h-pcbFree_table-1 < MAXPROC){
->>>>>>> Ottimizzazioni2
-=======
-		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//questo if è inutile, sostituirlo con uno valido
->>>>>>> merge with master
-=======
 		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//FIXME: questo if è inutile, sostituirlo con uno valido
->>>>>>> makefile: added clean option;
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
 		//}
@@ -98,19 +58,9 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			p->p_next = *head;
 			*head = p;
 		}else{	//...priority of the current element > priority of the element p
-<<<<<<< HEAD
-			insertProcQ(&(*head)->p_next, p);	
-			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
-		}
-<<<<<<< HEAD
-=======
-		else {
-=======
->>>>>>> patched
 			insertProcQ(&(*head)->p_next, p);
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
 		}
->>>>>>> Ottimizzazioni2
 	}
 }
 
@@ -128,18 +78,8 @@ pcb_t* removeProcQ(pcb_t **head){
 }
 
 /*
-<<<<<<< HEAD
-<<<<<<< HEAD
 For more information, see point [2] in design_choices.txt
 */
-=======
-+For more information, see point [2] in design_choices.txt
-+*/
->>>>>>> patched
-=======
-For more information, see point [2] in design_choices.txt
-*/
->>>>>>> fix merge
 pcb_t* outProcQ(pcb_t **head, pcb_t *p){	//Four possible scenarios...
 	if ((p == NULL) || (*head == NULL)) return NULL;	//...p is NULL or list is empty/p is not found
 	else if (*head == p) return removeProcQ(head); //...p is the element pointed by head
@@ -154,33 +94,15 @@ void forallProcQ(pcb_t *head, void fun(pcb_t *pcb, void *), void *arg){
 }
 
 /*
-<<<<<<< HEAD
-<<<<<<< HEAD
 See desing_choices.txt point [3]
 */
-=======
-+See desing_choices.txt point [3]
-+*/
->>>>>>> patched
-=======
-See desing_choices.txt point [3]
-*/
->>>>>>> fix merge
 void insertChild(pcb_t *parent, pcb_t *p){
 	if ((parent != NULL) && (p != NULL)){
 		if (parent->p_first_child == NULL){	//parent has no child
 			p->p_sib = NULL;
 			parent->p_first_child = p;
 			p->p_parent = parent;
-<<<<<<< HEAD
-<<<<<<< HEAD
 		}else{	//parent has already one or more children
-=======
-		}else {	//parent has already one or more children
->>>>>>> patched
-=======
-		}else{	//parent has already one or more children
->>>>>>> fix merge
 			pcb_t *son = parent->p_first_child;
 			parent->p_first_child = son->p_sib;
 			insertChild(parent,p);
@@ -213,4 +135,4 @@ pcb_t *outChild(pcb_t *p){
 		p->p_parent->p_first_child = son;
 		return ret;
 	}
-} 
+}
