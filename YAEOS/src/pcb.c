@@ -78,8 +78,8 @@ pcb_t* removeProcQ(pcb_t **head){
 }
 
 /*
-+For more information, see point [2] in design_choices.txt
-+*/
+For more information, see point [2] in design_choices.txt
+*/
 pcb_t* outProcQ(pcb_t **head, pcb_t *p){	//Four possible scenarios...
 	if ((p == NULL) || (*head == NULL)) return NULL;	//...p is NULL or list is empty/p is not found
 	else if (*head == p) return removeProcQ(&(*head)); //...p is the element pointed by head
@@ -94,15 +94,15 @@ void forallProcQ(pcb_t *head, void fun(pcb_t *pcb, void *), void *arg){
 }
 
 /*
-+See desing_choices.txt point [3]
-+*/
+See desing_choices.txt point [3]
+*/
 void insertChild(pcb_t *parent, pcb_t *p){
 	if ((parent != NULL) && (p != NULL)){
 		if (parent->p_first_child == NULL){	//parent has no child
 			p->p_sib = NULL;
 			parent->p_first_child = p;
 			p->p_parent = parent;
-		}else {	//parent has already one or more children
+		}else{	//parent has already one or more children
 			pcb_t *son = parent->p_first_child;
 			parent->p_first_child = son->p_sib;
 			insertChild(parent,p);
