@@ -24,6 +24,7 @@ pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 void initPcbs(){
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	int size = pcbfree_h - pcbFree_table;	//From the difference between the two pointer we obtain the actual number of elements.
 	if (pcbfree_h > pcbFree_table){
 		pcbfree_h = pcbfree_h - 1;	//The pointer is used as index for the array.
@@ -47,22 +48,27 @@ void initPcbs(){
 }
 /*
 void initPcbs(){
+=======
+>>>>>>> merge with master
 	pcbfree_h = pcbfree_h-1;	//index of array
-	int size = pcbfree_h-pcbFree_table;	//differenza fra due indirizzi di memoria scelta progettuale 1
-	(pcbFree_table[size]).p_next = (pcbfree_h < &pcbFree_table[MAXPROC]) ? &pcbFree_table[size+1] : NULL;
+	pcbfree_h->p_next = (pcbfree_h < &pcbFree_table[MAXPROC-1]) ? pcbfree_h+1 : NULL;
 	if (pcbfree_h > pcbFree_table) initPcbs();
 }
-*/
+
 void freePcb(pcb_t *p){
 	if (p != NULL){
+<<<<<<< HEAD
 <<<<<<< HEAD
 		if ((pcbfree_h - pcbFree_table - 1) < MAXPROC){	//Included to avoid not allowed insertion of pcb_t
 =======
 		if (pcbfree_h-pcbFree_table-1 < MAXPROC){
 >>>>>>> Ottimizzazioni2
+=======
+		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//questo if è inutile, sostituirlo con uno valido
+>>>>>>> merge with master
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
-		}
+		//}
 	}
 }
 
