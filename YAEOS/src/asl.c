@@ -1,14 +1,3 @@
-/* * * * * * * * * * * * * * * * * * * * * * * * *
- * YAEOS' phase 1 implementation proposed by     *
- * - Francesco Fornari 							 *
- * - Gabriele Fulgaro							 *
- * - Mattia Polverini							 *
- * 												 *
- * Operating System course						 *
- * A.A. 2017/2018 								 *
- * Alma Mater Studiorum - University of Bologna  *
- * * * * * * * * * * * * * * * * * * * * * * * * */
- 
 #include <uARMconst.h>
 #include "const.h"
 #include "pcb.h"
@@ -22,8 +11,11 @@ int insertBlocked(int *key, pcb_t *p){
 	int ret = 0;
 	if (p == NULL) ret = -1;
 	else {
-		int hash = (*key/4)%8;
+		int hash = (*key/2)%ASHDSIZE;
 		if (semdhash[hash] == NULL){
+			//int size = semdFree_h-semd_table-1;
+			//if (size >= MAXSEMD) ret = -1;
+			//if (semdFree_h == NULL) ret = -1;
 			 //il puntatore salta fuori dall'intervallo, vedere la remove
 			if ((semdFree_h >= &semd_table[MAXSEMD]) || (semdFree_h < semd_table)) ret = -1;
 			else {
@@ -51,13 +43,13 @@ int insertBlocked(int *key, pcb_t *p){
 }
 
 pcb_t *headBlocked(int *key){
-	int hash = (*key/4)%8;
+	int hash = (*key/2)%ASHDSIZE;
 	if (semdhash[hash] == NULL) return NULL;
 	else return headProcQ((*semdhash)[hash].s_procQ);
 }
 
 pcb_t* removeBlocked(int *key){
-	int hash = (*key/4)%8;
+	int hash = (*key/2)%ASHDSIZE;
 	pcb_t * ret = NULL;
 	if (semdhash[hash] == NULL) ret = NULL;
 	else if (semdhash[hash]->s_key == key) {
@@ -82,7 +74,7 @@ pcb_t* removeBlocked(int *key){
 }
 
 void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
-	int hash = (*key/4)%8;
+	int hash = (*key/2)%ASHDSIZE;
 	if (semdhash[hash] != NULL) {
 		if (semdhash[hash]->s_key == key) forallProcQ((*semdhash)[hash].s_procQ, fun, arg);
 		else {
@@ -96,7 +88,7 @@ void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
 
 void outChildBlocked(pcb_t *p){
 	if (p != NULL){
-		int hash = (*p->p_semKey/4)%8;
+		int hash = (*p->p_semKey/2)%ASHDSIZE;
 		if (semdhash[hash] != NULL) {
 			if (semdhash[hash]->s_key == p->p_semKey) removeBlocked(p->p_semKey);
 			else {
@@ -114,7 +106,7 @@ void initASL(){
 	if (size > 0) {
 		semdFree_h = semdFree_h-1;
 		initASL();
-		if (size < 20)	(semd_table[size-1]).s_next = &semd_table[size];
+		if (size < MAXSEMD)	(semd_table[size-1]).s_next = &semd_table[size];
 		else semd_table[size-1].s_next = NULL;
 	}
 }
