@@ -94,12 +94,15 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			p->p_next = *head;
 			*head = p;
 		}else{	//...priority of the current element > priority of the element p
+<<<<<<< HEAD
 			insertProcQ(&(*head)->p_next, p);	
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
 		}
 <<<<<<< HEAD
 =======
 		else {
+=======
+>>>>>>> patched
 			insertProcQ(&(*head)->p_next, p);
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
 		}
@@ -121,8 +124,13 @@ pcb_t* removeProcQ(pcb_t **head){
 }
 
 /*
+<<<<<<< HEAD
 For more information, see point [2] in design_choices.txt
 */
+=======
++For more information, see point [2] in design_choices.txt
++*/
+>>>>>>> patched
 pcb_t* outProcQ(pcb_t **head, pcb_t *p){	//Four possible scenarios...
 	if ((p == NULL) || (*head == NULL)) return NULL;	//...p is NULL or list is empty/p is not found
 	else if (*head == p) return removeProcQ(&(*head)); //...p is the element pointed by head
@@ -137,15 +145,24 @@ void forallProcQ(pcb_t *head, void fun(pcb_t *pcb, void *), void *arg){
 }
 
 /*
+<<<<<<< HEAD
 See desing_choices.txt point [3]
 */
+=======
++See desing_choices.txt point [3]
++*/
+>>>>>>> patched
 void insertChild(pcb_t *parent, pcb_t *p){
 	if ((parent != NULL) && (p != NULL)){
 		if (parent->p_first_child == NULL){	//parent has no child
 			p->p_sib = NULL;
 			parent->p_first_child = p;
 			p->p_parent = parent;
+<<<<<<< HEAD
 		}else{	//parent has already one or more children
+=======
+		}else {	//parent has already one or more children
+>>>>>>> patched
 			pcb_t *son = parent->p_first_child;
 			parent->p_first_child = son->p_sib;
 			insertChild(parent,p);
