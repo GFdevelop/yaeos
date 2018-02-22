@@ -377,7 +377,7 @@ int main() {
 	addokbuf("Test insertBlocked() and removeBlocked() ok\n");
 
 
-#if 0
+#if 1
 	/* Creating a 2-layer tree */
 	insertChild(procp[0], procp[1]);
 	insertChild(procp[0], procp[2]);
