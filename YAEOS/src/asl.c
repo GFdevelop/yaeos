@@ -24,7 +24,11 @@ int insertBlocked(int *key, pcb_t *p){
 	else {
 		int hash = (*key/2)%ASHDSIZE;
 		if (semdhash[hash] == NULL){
+<<<<<<< HEAD
 			if (semdFree_h == NULL) ret = -1; //il puntatore salta fuori dall'intervallo, vedere la remove
+=======
+			if (semdFree_h == NULL) ret = -1;
+>>>>>>> GFdevelop
 			else {
 				semdhash[hash] = semdFree_h;
 				semdFree_h = semdFree_h->s_next;

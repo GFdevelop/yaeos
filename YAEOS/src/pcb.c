@@ -22,20 +22,17 @@ See point [1] of design_choises.txt.
 pcb_t *pcbfree_h = &pcbFree_table[MAXPROC];
 
 void initPcbs(){
-	int size = pcbfree_h - pcbFree_table;	//From the difference between the two pointer we obtain the actual number of elements.
-	if (pcbfree_h > pcbFree_table){
-		pcbfree_h = pcbfree_h - 1;	//The pointer is used as index for the array.
-		initPcbs();
-		pcbFree_table[size-1].p_next = (size < MAXPROC) ? &pcbFree_table[size] : NULL;
-	}
+	pcbfree_h = pcbfree_h-1;	//index of array
+	pcbfree_h->p_next = (pcbfree_h < &pcbFree_table[MAXPROC-1]) ? pcbfree_h+1 : NULL;
+	if (pcbfree_h > pcbFree_table) initPcbs();
 }
 
 void freePcb(pcb_t *p){
 	if (p != NULL){
-		if ((pcbfree_h - pcbFree_table - 1) < MAXPROC){	//Included to avoid not allowed insertion of pcb_t
+		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//FIXME: questo if è inutile, sostituirlo con uno valido
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
-		}
+		//}
 	}
 }
 
@@ -61,7 +58,7 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			p->p_next = *head;
 			*head = p;
 		}else{	//...priority of the current element > priority of the element p
-			insertProcQ(&(*head)->p_next, p);	
+			insertProcQ(&(*head)->p_next, p);
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;
 		}
 	}
@@ -85,7 +82,7 @@ For more information, see point [2] in design_choices.txt
 */
 pcb_t* outProcQ(pcb_t **head, pcb_t *p){	//Four possible scenarios...
 	if ((p == NULL) || (*head == NULL)) return NULL;	//...p is NULL or list is empty/p is not found
-	else if (*head == p) return removeProcQ(&(*head)); //...p is the element pointed by head
+	else if (*head == p) return removeProcQ(head); //...p is the element pointed by head
 	else return outProcQ(&(*head)->p_next, p);	//...p not found but list isn't finished yet
 }
 
@@ -138,4 +135,4 @@ pcb_t *outChild(pcb_t *p){
 		p->p_parent->p_first_child = son;
 		return ret;
 	}
-} 
+}
