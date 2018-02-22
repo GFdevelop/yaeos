@@ -24,7 +24,7 @@ int insertBlocked(int *key, pcb_t *p){
 	else {
 		int hash = (*key/2)%ASHDSIZE;
 		if (semdhash[hash] == NULL){
-			if (semdFree_h == NULL) ret = -1; //il puntatore salta fuori dall'intervallo, vedere la remove
+			if (semdFree_h == NULL) ret = -1;
 			else {
 				semdhash[hash] = semdFree_h;
 				semdFree_h = semdFree_h->s_next;
@@ -60,7 +60,7 @@ pcb_t* removeBlocked(int *key){
 		ret = removeProcQ(&(*semdhash)[hash].s_procQ);
 		if (semdhash[hash]->s_procQ == NULL){
 			semdhash[hash]->s_key = NULL;
-			semd_t * next = semdhash[hash]->s_next; //questo credo che fa saltare il puntatore fuori dalla lista libera
+			semd_t * next = semdhash[hash]->s_next;
 			semdhash[hash]->s_next = semdFree_h;
 			semdFree_h = semdhash[hash];
 			semdhash[hash] = next;
