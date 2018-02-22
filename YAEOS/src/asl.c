@@ -38,7 +38,7 @@ int insertBlocked(int *key, pcb_t *p){
 			semd_t * prev = semdhash[hash];
 			semdhash[hash] = semdhash[hash]->s_next;
 			ret = insertBlocked(key,p);
-			if ((semdhash[hash]->s_key == key) && (prev->s_next == NULL)) prev->s_next = semdhash[hash];
+			if (semdhash[hash] != prev->s_next) prev->s_next = semdhash[hash];
 			semdhash[hash] = prev;
 		}
 		else insertProcQ(&(*semdhash)[hash].s_procQ,p);
