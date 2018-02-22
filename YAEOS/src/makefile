@@ -20,3 +20,6 @@ pcb.o: pcb.c
 
 asl.o: asl.c
 	$(CC) $(CPU) -c asl.c -o asl.o -I $(INC_DIR) -I .
+
+clean:
+	rm phase1 *.o

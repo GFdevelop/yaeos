@@ -29,7 +29,7 @@ void initPcbs(){
 
 void freePcb(pcb_t *p){
 	if (p != NULL){
-		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//questo if è inutile, sostituirlo con uno valido
+		//if (pcbfree_h-pcbFree_table-1 < MAXPROC){		//FIXME: questo if è inutile, sostituirlo con uno valido
 			p->p_next = pcbfree_h;
 			pcbfree_h = p;
 		//}
@@ -82,7 +82,7 @@ For more information, see point [2] in design_choices.txt
 */
 pcb_t* outProcQ(pcb_t **head, pcb_t *p){	//Four possible scenarios...
 	if ((p == NULL) || (*head == NULL)) return NULL;	//...p is NULL or list is empty/p is not found
-	else if (*head == p) return removeProcQ(&(*head)); //...p is the element pointed by head
+	else if (*head == p) return removeProcQ(head); //...p is the element pointed by head
 	else return outProcQ(&(*head)->p_next, p);	//...p not found but list isn't finished yet
 }
 
