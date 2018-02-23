@@ -1,18 +1,12 @@
-BIN_DIR = ../bin/
-SUBDIRS = src example
+include makefile.inc
 
-all: $(SUBDIRS)
+DIRS= src example
 
-$(SUBDIRS):
-	$(MAKE) -C $@
+all: $(DIRS)
 
-.PHONY: $(SUBDIRS)
+$(DIRS):src example
+	$(MAKE) -C $^
 
-#.PHONY: clean All
-#
-#All:
-#	@echo ----------Building project:[ ofMaker - DebugUnicode ]----------
-#	@"$(MAKE)" -f "ofMaker.mk"
-#clean:
-#	@echo ----------Cleaning project:[ ofMaker - DebugUnicode ]----------
-#	@"$(MAKE)" -f "ofMaker.mk" clean
+.PHONY: $(DIRS)
+
+#.PHONY: clean all
