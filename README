@@ -1,0 +1,19 @@
+### YAEOS - Yet Another Educational Operating System ###
+
+YAEOS is a project conceived by Professor Renzo Davoli, for didactic purpose, for his students of Operating System course at Alma Mater Studiorum - University of Bologna.
+The core idea is to build an operating system starting only from a ARM7TDMI cpu emulator, called uARM (microAMR).
+
+What you will find in this repository is a possible implementation proposed by the group "lso18az17" formed by:
+- Fornari Francesco <francesco.fornari2@studio.unibo.it>
+- Fulgaro Gabriele <gabriele.fulgaro@studio.unibo.it>
+- Polverini Mattia <mattia.polverini@studio.unibo.it>
+
+### REQUIREMENTS ###
+
+- uARM (can be downloaded and installed from https://github.com/mellotanica/uARM)
+- GNU Arm Embedded Toolchain
+- GNU Build Suite, alo known as Autotools
+
+### HOW TO TEST IMPLEMENTATION ###
+
+
