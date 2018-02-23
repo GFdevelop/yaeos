@@ -1,23 +1,18 @@
-INC_DIR = /usr/include/uarm
-CFLAGS = -fPIC
-CPU = -mcpu=arm7tdmi -Wall
 BIN_DIR = ../bin/
+SUBDIRS = src example
 
-SYSLIB = /usr/include/uarm/crtso.o /usr/include/uarm/libuarm.o
-ELFSCRIPT = /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x
+all: $(SUBDIRS)
 
-CC = arm-none-eabi-gcc
-LD = arm-none-eabi-ld
-AR = arm-none-eabi-ar
+$(SUBDIRS):
+	$(MAKE) -C $@
 
-phase1: pcb.o p1test.o asl.o
-	$(LD) -T $(ELFSCRIPT) -o phase1 $(SYSLIB) p1test.o pcb.o asl.o -I $(INC_DIR) -I .
+.PHONY: $(SUBDIRS)
 
-p1test.o: p1test.c
-	$(CC) $(CPU) $(CFLAGS) -c p1test.c -o p1test.o -I $(INC_DIR) -I .
-
-pcb.o: pcb.c
-	$(CC) $(CPU) $(CFLAGS) -c pcb.c -o pcb.o -I $(INC_DIR) -I .
-
-asl.o: asl.c
-	$(CC) $(CPU) $(CFLAGS) -c asl.c -o asl.o -I $(INC_DIR) -I .
+#.PHONY: clean All
+#
+#All:
+#	@echo ----------Building project:[ ofMaker - DebugUnicode ]----------
+#	@"$(MAKE)" -f "ofMaker.mk"
+#clean:
+#	@echo ----------Cleaning project:[ ofMaker - DebugUnicode ]----------
+#	@"$(MAKE)" -f "ofMaker.mk" clean
