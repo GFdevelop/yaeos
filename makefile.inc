@@ -7,6 +7,7 @@ ELFSCRIPT = /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x
 INC_DIR = /usr/include/uarm
 LIB_DIR=../src/
 BIN_DIR = ../bin/
+EXE=p1test
 
 SHELL	= /bin/sh
-.SILENT :
+#.SILENT :

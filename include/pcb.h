@@ -2,6 +2,7 @@
 #define PCB_H
 
 #include <uARMtypes.h>
+#include <uARMconst.h>
 #include <const.h>
 
 typedef struct pcb_t {

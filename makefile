@@ -1,12 +1,19 @@
 include makefile.inc
 
-DIRS= src example
+all: $(EXE) shared static
 
-all: $(DIRS)
+$(EXE):
+	$(MAKE) -C example
 
-$(DIRS):src example
-	$(MAKE) -C $^
+shared:
+	$(MAKE) -C src shared
 
-.PHONY: $(DIRS)
+static:
+	$(MAKE) -C src static
 
-#.PHONY: clean all
+clean: $(addsuffix clean, src example)
+
+%clean: %
+	$(MAKE) -C $< clean
+
+.PHONY: all shared static clean

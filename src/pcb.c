@@ -9,10 +9,7 @@
  * Alma Mater Studiorum - University of Bologna  *
  * * * * * * * * * * * * * * * * * * * * * * * * */
    
-#include <uARMconst.h>
-#include "const.h"
 #include "pcb.h"
-#include "asl.h"
 
 pcb_t pcbFree_table[MAXPROC];
 /*

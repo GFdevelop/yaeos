@@ -9,9 +9,6 @@
  * Alma Mater Studiorum - University of Bologna  *
  * * * * * * * * * * * * * * * * * * * * * * * * */
  
-#include <uARMconst.h>
-#include "const.h"
-#include "pcb.h"
 #include "asl.h"
 
 semd_t semd_table[MAXSEMD];
