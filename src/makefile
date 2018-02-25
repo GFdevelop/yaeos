@@ -1,12 +1,16 @@
 include ../makefile.inc
 
-all libs: $(LIBS)
-	$(info [OK] libraries)
+all static: $(LIBS)
+	$(info [OK] static libraries)
 
-lib%: %.o
-	$(AR) rcs $@.a $<
+lib%: lib%.a
+	$(info [OK] $@)
+
+
+lib%.a: %.o
+	$(AR) rcs $@ $<
 
 clean:
 	-rm -f *.o *.a
 
-.PHONY: all libs clean
+.PHONY: all static lib% clean

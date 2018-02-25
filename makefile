@@ -1,19 +1,21 @@
 include makefile.inc
 
-all: $(EXE) libs
+# trick: in future we add new p%test in $(EXE)
+all: $(EXE) static
 
+# trick: for future p2test or p3test
 p%test: bin
-# change in DIRECTORY and do make TARGET
 	$(MAKE) -C example $@
-# "$<" name of first prerequisite
+# copy p%test in bin/ only if date of file is newer
 	cp -u example/$@ $</
 
-libs: $(LIBS)
+static: $(LIBS)
 
 lib%: lib
 	$(MAKE) -C src $@
 	cp -u src/$@.a $</
 
+# this is "a check", if you do 'make libpcb libasl' it make "lib" directory only one time
 bin lib:
 	mkdir -p $@
 
@@ -54,4 +56,4 @@ clean:
 cleanall: clean
 	-rm -f -r bin lib *tar.gz *.sha1sum
 
-.PHONY: all p%test libs source release clean cleanall
+.PHONY: all p%test static source release clean cleanall

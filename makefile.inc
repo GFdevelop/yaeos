@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 PROJ = yaeos
-VERSION = 1.0.0
+VERSION = 1.0.8
 ARCH = arm7tdmi
 SRCTAR = $(PROJ)-$(VERSION)-src
 RELTAR = $(PROJ)-$(VERSION)-$(ARCH)
@@ -17,7 +17,7 @@ INC_DIR = /usr/include/uarm
 
 
 # don't print recipe (alternative use "@" before command)
-.SILENT:
+#.SILENT:
 
 # don't remove intermediate files
 .SECONDARY:
