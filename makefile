@@ -1,23 +1,19 @@
 include makefile.inc
 
-# trick: in future we add new p%test in $(EXE)
+# in future we add new p2test in $(EXE)
 all: $(EXE) static
 
-# trick: for future p2test or p3test
-p%test: bin
+# for future p2test
+p%test:
 	$(MAKE) -C example $@
+	mkdir -p bin
 # copy p%test in bin/ only if date of file is newer
-	cp -u example/$@ $</
+	cp -u example/$@ bin/
 
-static: $(LIBS)
-
-lib%: lib
+static $(LIBS):
 	$(MAKE) -C src $@
-	cp -u src/$@.a $</
-
-# this is "a check", if you do 'make libpcb libasl' it make "lib" directory only one time
-bin lib:
-	mkdir -p $@
+	mkdir -p lib
+	cp -u src/*.a lib/
 
 source:
 	tar --exclude=*.tar.gz \
@@ -30,7 +26,7 @@ source:
 		-czf $(SRCTAR).tar.gz *
 		gzip -t $(SRCTAR).tar.gz
 		sha1sum $(SRCTAR).tar.gz > $(SRCTAR).sha1sum
-	$(info [OK] $(SRCTAR).tar.gz)
+	echo [OK] $(SRCTAR).tar.gz
 
 release: all
 	tar --exclude=*.tar.gz \
@@ -47,7 +43,7 @@ release: all
 		-czf $(RELTAR).tar.gz *
 		gzip -t $(RELTAR).tar.gz
 		sha1sum $(RELTAR).tar.gz > $(RELTAR).sha1sum
-	$(info [OK] $(RELTAR).tar.gz)
+	echo [OK] $(RELTAR).tar.gz
 
 clean:
 	$(MAKE) -C src clean

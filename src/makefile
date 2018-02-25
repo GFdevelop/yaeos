@@ -1,14 +1,13 @@
 include ../makefile.inc
 
 all static: $(LIBS)
-	$(info [OK] static libraries)
 
 lib%: lib%.a
-	$(info [OK] $@)
-
+	# fake recipe
 
 lib%.a: %.o
 	$(AR) rcs $@ $<
+	echo [OK] lib$*
 
 clean:
 	-rm -f *.o *.a
