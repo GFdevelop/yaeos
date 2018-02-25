@@ -16,12 +16,11 @@ semd_t *semdFree_h = &semd_table[MAXSEMD];
 semd_t *semdhash[ASHDSIZE];
 
 int insertBlocked(int *key, pcb_t *p){
-	int ret = 0;
-	if (p == NULL) ret = -1;
+	if (p == NULL) return -1;
 	else {
 		int hash = (*key/2)%ASHDSIZE;
 		if (semdhash[hash] == NULL){
-			if (semdFree_h == NULL) ret = -1;
+			if (semdFree_h == NULL) return -1;
 			else {
 				semdhash[hash] = semdFree_h;
 				semdFree_h = semdFree_h->s_next;
@@ -29,18 +28,22 @@ int insertBlocked(int *key, pcb_t *p){
 				semdhash[hash]->s_key = key;
 				p->p_semKey = key;
 				insertProcQ(&(*semdhash)[hash].s_procQ,p);
+				return 0;
 			}
 		}
 		else if (semdhash[hash]->s_key != key){
 			semd_t * prev = semdhash[hash];
 			semdhash[hash] = semdhash[hash]->s_next;
-			ret = insertBlocked(key,p);
+			int ret = insertBlocked(key,p);
 			if (semdhash[hash] != prev->s_next) prev->s_next = semdhash[hash];
 			semdhash[hash] = prev;
+			return ret;
 		}
-		else insertProcQ(&(*semdhash)[hash].s_procQ,p);
+		else {
+			insertProcQ(&(*semdhash)[hash].s_procQ,p);
+			return 0;
+		}
 	}
-	return ret;
 }
 
 pcb_t *headBlocked(int *key){ 
