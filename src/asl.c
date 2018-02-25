@@ -18,6 +18,9 @@ semd_t *semdhash[ASHDSIZE];
 int insertBlocked(int *key, pcb_t *p){
 	if (p == NULL) return -1;
 	else {
+/*
+Complete information at point [5] in design_choices.txt
+*/
 		int hash = (*key/2)%ASHDSIZE;	// get hash index (PROJECT CHOICES)
 		if (semdhash[hash] == NULL){	// if index is empty or s_next (recursion) is NULL then alloc semaphore
 			if (semdFree_h == NULL) return -1;

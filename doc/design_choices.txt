@@ -1,0 +1,23 @@
+[1]
+The idea behind this choice is to exploit the phisycal representation of the array data type.
+We know that array is stored in a sequential way so is first item is stored at address N, second item will be at address N+1 and so on.
+Thus, we assign the pcbfree_h to the next element after the last one of the array to use it as index.
+In fact, using pointer arithmetic, we decrement by one pcbfree_h in each function call to visit the entire array without using iteration.
+
+[2]
+In this case, the idea is to use the **head parameter.
+After checking the exit case (parameter p is NULL or the we reached the end of the list without find p), we check p against the element pointed by *head:
+if they match, we use removeProcQ to remove it because it is the very first element of the list.
+If they do not match, we call outProcQ with &(*head)->p_next as parameter in order to make the previous case always work.
+
+[3]
+In insertChild we, roughly speaking, have two cases: the first one is when the list is empty or when we are about to insert the element in the last available space.
+The second one is when the parent have more than one children.
+We use *saved to store the actual first child of the parent, then we insert the element p as first child and set saved->p_parent to the element just inserted.
+
+[4]
+Here we use a point [3] similar idea.
+
+[5]
+Modern compiler make address memory pair for optimize the execution, we can get hash
+from address divide it for 2 and then get module of table size that is 8 in our case
