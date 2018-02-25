@@ -52,4 +52,20 @@ clean:
 cleanall: clean
 	-rm -f -r bin lib *tar.gz *.sha1sum
 
-.PHONY: all p%test static source release clean cleanall
+help:
+	echo "OPTIONS:   [all][p1test][static][libpcb][libasl]"
+	echo "           [source][release][cleanall][help]"
+	echo
+	echo "[all]            p1test and static"
+	echo "[p1test]         executable p1test"
+	echo "[static]         static libraries libpcb and libasl"
+	echo "[libpcb]         static library libpcb"
+	echo "[libasl]         static library libasl"
+	echo "[source]         tar.gz of source with sha1sum (require optional deps)"
+	echo "[release]        tar.gz of release with sha1sum (require optional deps)"
+	echo "[clean]          clean subdirectory example/ and src/"
+	echo "[cleanall]       clean subdirectory and remove bin/ lib/ *tar.gz *.sha1sum"
+	echo "[help]           show this message"
+	echo
+
+.PHONY: all p%test static source release clean cleanall help

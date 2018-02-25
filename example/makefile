@@ -10,4 +10,12 @@ p1test: p1test.o ../src/pcb.o ../src/asl.o
 clean:
 	-rm -f *.o $(EXE)
 
-.PHONY: all clean
+help:
+	echo "OPTIONS:   [all][p1test][clean][help]"
+	echo
+	echo "[all][p1test]    for make executable"
+	echo "[clean]          remove *.o and executable"
+	echo "[help]           show this message"
+	echo
+
+.PHONY: all clean help
