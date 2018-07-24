@@ -1,0 +1,52 @@
+--- INTRODUCTION ---
+
+uARM è composto da:
+- ARM7TDMI CPU
+- Coprocessore di sistema CP15 incorporato nel processore
+- RAM little-endian con memoria virtuale opzionale basata su TLB
+- Devives: fino a 8 istanze per ognuna delle 5 classi di risorse
+- Bus di sistema.
+
+--- PROCESSORE ---
+
+7 differemnti modalità di esecuzione:
+
+1. User Mode (usr) - esecuzione regolare
+2. System Mode (sys) - esecuzione privilegiata
+3. Supervisor (svc) - esecuzione del kernel in modalità protetta
+4. Fast Interrupt (fiq) - modalità protetta per la gestione Fast Interrupt
+5. Interrupt (irq) - modalità protetta per la gestione Interrupt
+6. Abort (abt) - modalità protetta per la gestione di eccezioni di tipo data/instruction abort
+7. Undefined (und) - modalità protetta per la gestione di eccezioni di tipo undefined instruction
+
+In ogni modalità la CPU accede ad una porzione limitata dei suoi registri.
+User Mode/System Mode -> 16 registri.
+Modalità protette -> 17 registri.
+Va aggiunto poi il registro "CPRS" (Current Program Status Register) che è condiviso da tutte le modalità.
+
+I primi 8 regitri, e il "Program Counter" (R15), sono gli stessi per tutte le modalità.
+Ogni modalità protetta ha i suoi registri dedicati "Stack Pointer" e "Link Return".
+La modalità Fast Interrupt ha gli ultimi 7 registri riservati unicamente per lui mentre System Mode e User Mode condividono l'intero set dei 16 rgistri general purpose.
+
+Sebbene i 16 registri siano condivisi e genersl-purpouse ci sono alcune convenzioni nell'utilizzo di alcuni registri:
+
+- R0 (a1) -> primo argomento della funzione / risultato intero
+- R1 (a2) -> secondo argomento della funzione
+- R2 (a3) -> terzo argomento della funzione
+- R3 (a4) -> quarto argomentodella funzione
+- R4 (v1) -> registro variabile
+- R5 (v2) -> registro variabile
+- R6 (v3) -> registro variabile
+- R7 (v4) -> registro variabile
+- R8 (v5) -> registro variabile
+- R9 (v6/rfp) -> registro variabile / real frame pointer
+- R10 (sl) -> stack limit
+- R11 (fp) -> frame pointer / argument pointer
+- R12 (ip) -> instruction pointer / temporary workspace
+- R13 (sp) -> stack pointer
+- R14 (lr) -> link register
+- R15 (pc) -> program counter
+- CPSR - Current Program Status Register
+- SPSR_mode - CPSR salvato in precedenza
+
+Quando il processore usa Thumb come instrucion set, i registri sono ridotti a 12 

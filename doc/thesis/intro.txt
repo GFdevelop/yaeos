@@ -1,0 +1,74 @@
+--- PROCESSORE ---
+
+AdvancedRISCMachine (=ARM) modello ARM7TDMI con prima versione ISA Thumb.
+Registri da 32 bit, istruzioni da 32 bit o 16bit a seconda dell'ISA scelto.
+Pipeline a 3 stadi: fetch-decode-execute.
+Registri sempre accessibili: 10.
+8 general purpose: primi 4 per parametri e valori di ritorno, gli ultimi 4 per variabili locali.
+2 special purpose: program counter e status register (possibile modificare il comportamento del processore cambiando il livello di privilegi, inibendo interrupt o cambiando modalità di interpretazione del codice binario).
+Set di registri ulteriormente diviso tra quelli accessibili inmodalità ARM e quelli accessibili in modalità Thumb.
+
+7 modalità di esecuzione disponibili: 2 riservate alla normale esecuzione (User mode e System mode), le altre 5 vengono  attivate automaticamente in risposta a interrupt o errori.
+-Interrupt -> interruzioni rilevate con una linea esterna connessaal processore;
+-Fast Interrupt -> interruzioni rilevate tramite una seconda linea di interruzione esterna;
+-Software Interrupt -> interruzioni richeste attraverso specifiche istruzioni all'interno del programma in esecuzione.
+Primi due generati da dispositivi esterni collegati alla CPU e servono per notificare un qualche evento.
+Differenza tra Fast Interrupt e Interrupt: 7 registri indipendenti(no context switch) vs 2 registri indipendenti + 5 condivisi(context switch possibile per operazioni complesse).
+Il terzo tipo (Interrupt Software) ferma l'esecuzione per entrare in modalità "Supervisor" e permette la realizzaione di un gestore di servizi di sistema.
+
+3 tipi di errore:
+1. Data Abort -> errore di accesso alla memoria con operazioni load/store;
+2. Prefetch Abort -> errore di accesso alla memoria durante la fase di fetch;
+3. Undefined Exception -> istruzione non riconusciuta.
+Le prime due vengono gestite in modalità "Abort" ma è possibile ssociarvi routine separate mentre l'ultima viene gestita in modalità "Undefined".
+Ogni volta che si verifica un errore, il processore cambia modlità di esecuzione e effettua un salto ad un indirizzo specifico (diverso per ogni errore). Questo permette di implementare gestori a basso livello direttamente nel BIOS che: effettuino il context switch salvando lo stato della CPU precedente all'eccezione, indicare in uno specifico registro del CCPU la causa dell'errore e avviarne la gestione a livello kernel.
+
+<!-- NON UTILE -->
+Primo instruction set di ARM -> ARM ISA.
+Istruzioni a 32 bit (= 4byte) basate su load 'n' store.
+Operazioni aritmetiche possibili solo sul contenuto dei registri e accesso alla memoria solo in scrittura o lettura.
+Il nibble più significativo di ogni istruzione permettono di esprimere una condizione che verrà valutata prima dell'esecuzione dell'istruzione stessa: l'esecuzione verrà inibita se tale condizione dovesse risultare falsa.
+Il nibble successivo identifica una tra le 9 classi possibili di istruzioni e, per molte di queste, il nibble successivo identifica l'istruzione specifica. Il secondo quartetto di bit meno significativi contiene un altro codice per discriminare altre operazioni (???).
+Esaminando 12 bit è possibile avere subito una corrispondenza con il comando da eseguire.
+<!-- /NON UTILE -->
+
+--- COPROCESSORE (CCPU) ---
+
+Possibile collegare fino a 16 coprocessori, l'unico con specifiche però è l'ultimo chiamato "system control coprocessor"  (o coprocessore di sistema).
+Si occupa della gestione della memoria virtuale, segnale i codici delle eccezioni e gli indirizzi errati in caso di Data/Fetch Abort. Fornisce anche informazionisul sitema e gestisce la sospensione (WAIT) e spegnimento (HALT) del sistema.
+
+--- DEVICES ---
+
+.: INTERVAL TIMER :.
+
+Il valore numerico può essere impostato dal processore e diminuisce ad ogni ciclo di clock; il timer genera un interrupt quando, aggiornando il valore, si verifica un undeflow (da 0 a -1 -> da 0x0000.0000 a 0xFFFF.FFFF). Necessario per qualsiasi schema di temporizzazione.
+
+--- MEMORIA ---
+
+Due memorie ad accesso veloce: ROM con BIOS di sistema ed una RAM di dimensione variabile.
+
+.: ROM :.
+
+Memoria di sola lettura e di dimensioni contenute (max ~108KB), al cui interno deve essere caricato il BIOS per un corretto avvio.
+CPU appena avviato esegue l'istruzione che si trova nelprimo indirizzo del bus (= eccezione specile "reset").
+Tuttavia, la zona di memoria all'inizio dello spazio degli indirizzi è riservata per la gestione delle eccezioni e no è possibile scrivere tutto il codice di avvio in quell'area!
+Per ovviare a questo problema è stata introdotta la ROM e la parola di memoria associata all'eccezione "reset" è fissata in hardware per effettuare un salto incondizionato all'inizio della ROM.
+
+.: RAM :.
+
+RAM little-endian (memorizza prima il byte meno significativo e finisce con il più significativo) di dimensione varibile e di massimo 4GB. Presente controller della memoria che effettua semplici controlli di accesso, implementa DMA e realizza schema di memoria virtuale insieme al CCPU.
+All'avvio, lamemoria virtuale è spenta e permette un accesso 1:1 tra indirizzi logici e fisici  della memoria.
+
+--- BIOS e SERVIZI FIRMWARE ---
+
+Il firmware implementa tre servizi di basso livello accessibili tramite la libreria di sistema:
+1. LDST che carica lo stato del processore che si trova all'indirizzo indicato dal valore nel primo registro del proessore.
+2. HALT che arresta il sistema in maiera corretta con il messaggio "SYSTEM HALTED" sul primo terminnale.
+3. PANIC che mosta il messaggio "KERNEL PANIC" sul primo terminale ed entra in un loop infinito cche segnala un errore grave.
+
+BIOS fornisce gestori di bsso livello per ogni tipo di eccezione e, se necessario, passano il controllo ai gestori di livello kernel (PASS-UP). Gestori di interrupt e trap si limitano a fare pass-up.
+Il gestore delle syscall/breakpoint risponde direttamente ai breakpoint che richiamano i servizi LDST, HALT e PANIC, altimenti fa pass-up.
+
+Durante bootstrap BIOS imposta i suoi gestori in modo corretto e i gestori di alto livello vengono inzializzati in modo da puntare alla funzione PANIC per evitare comportamenti imprevedibili. Infine recupera il punto di ingresso dall'immagine binaria del kernel e avvia l'esecuzione del codice presete in RAM.
+
+Libreria di sistema (libuarm.h) funzioni per accedere alle funzionalità di hardware e BIOS, registri della CPU e del CCPU, richiedere system call e context switch, etc etc.
