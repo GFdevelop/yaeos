@@ -28,7 +28,7 @@ I primi 8 regitri, e il "Program Counter" (R15), sono gli stessi per tutte le mo
 Ogni modalità protetta ha i suoi registri dedicati "Stack Pointer" e "Link Return".
 La modalità Fast Interrupt ha gli ultimi 7 registri riservati unicamente per lui mentre System Mode e User Mode condividono l'intero set dei 16 rgistri general purpose.
 
-Sebbene i 16 registri siano condivisi e genersl-purpouse ci sono alcune convenzioni nell'utilizzo di alcuni registri:
+Sebbene i 16 registri siano condivisi e general-purpouse ci sono alcune convenzioni nell'utilizzo di alcuni registri:
 
 - R0 (a1) -> primo argomento della funzione / risultato intero
 - R1 (a2) -> secondo argomento della funzione

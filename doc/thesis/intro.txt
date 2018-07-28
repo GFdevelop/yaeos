@@ -19,7 +19,7 @@ Il terzo tipo (Interrupt Software) ferma l'esecuzione per entrare in modalità "
 3 tipi di errore:
 1. Data Abort -> errore di accesso alla memoria con operazioni load/store;
 2. Prefetch Abort -> errore di accesso alla memoria durante la fase di fetch;
-3. Undefined Exception -> istruzione non riconusciuta.
+3. Undefined Exception -> istruzione non riconosciuta.
 Le prime due vengono gestite in modalità "Abort" ma è possibile ssociarvi routine separate mentre l'ultima viene gestita in modalità "Undefined".
 Ogni volta che si verifica un errore, il processore cambia modlità di esecuzione e effettua un salto ad un indirizzo specifico (diverso per ogni errore). Questo permette di implementare gestori a basso livello direttamente nel BIOS che: effettuino il context switch salvando lo stato della CPU precedente all'eccezione, indicare in uno specifico registro del CCPU la causa dell'errore e avviarne la gestione a livello kernel.
 
