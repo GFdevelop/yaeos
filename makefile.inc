@@ -1,6 +1,6 @@
 SHELL = /bin/sh
 PROJ = yaeos
-VERSION = 1.1.0
+VERSION = 1.1.1
 ARCH = arm7tdmi
 SRCTAR = $(PROJ)-$(VERSION)-src
 RELTAR = $(PROJ)-$(VERSION)-$(ARCH)

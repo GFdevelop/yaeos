@@ -20,10 +20,10 @@
 #include "asl.h"
 
 #include "interrupts.h"
-#include "trap.h"
+#include "exceptions.h"
 #include "syscall.h"
 #include "scheduler.h"
-#include "main.h"
+#include "initial.h"
 
 
 //~ typedef struct {
@@ -52,6 +52,10 @@
 //~ } state_t;
 
 
+pcb_t *readyLOW, *readyNORM, *readyHIGH, *readyIDLE, *currentPCB;
+int processCount, softBlockCount;
+
+
 void newArea(unsigned int address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
@@ -63,25 +67,38 @@ void newArea(unsigned int address, void handler()){
 
 
 int main() {
-	//init NEW area: Exception States Vector start at 7000 end at 72C0; each segment (processor state) is 88 bytes (58 in hex), page 70
+	tprint("init NEW area\n");
 	newArea(INT_NEWAREA,interruptHandler);
-	newArea(PGMTRAP_NEWAREA,trapHandler);
-	//init pcb and asl
+	newArea(PGMTRAP_NEWAREA,exceptionsHandler);
+	
+	tprint("init pcb and asl\n");
 	initPcbs();
 	initASL();
-	//init variables
-	//int processCount = 0;
-	//init semaphores
+	
+	tprint("init variables\n");
+	readyLOW = NULL;
+	readyNORM = NULL;
+	readyHIGH = NULL;
+	readyIDLE = NULL;
+	currentPCB = NULL;
+	processCount = 0;
+	softBlockCount = 0;
+	
+	tprint("init semaphores\n");
 	//int sem = 0;
-	//create first pcb
+	
+	tprint("create first pcb\n");
 	pcb_t *mainPCB = allocPcb();
 	mainPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(mainPCB->p_s.cpsr);
-	mainPCB->p_priority = MIN_PCB_PRIORITY;
+	mainPCB->p_priority = PRIO_LOW;
 	mainPCB->p_s.CP15_Control = CP15_CONTROL_NULL;
 	mainPCB->p_s.cpsr = STATUS_SYS_MODE;
 	mainPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
 	mainPCB->p_s.pc = (memaddr)test;
-	//call scheduler
+	insertProcQ(&readyNORM, mainPCB);
+	
+	tprint("call scheduler\n");
 	scheduler();
+	
 	return 0;
 }

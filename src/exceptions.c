@@ -10,9 +10,9 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
-#include "trap.h"
+#include "exceptions.h"
 
 
-void trapHandler(){
+void exceptionsHandler(){
 	
 }
