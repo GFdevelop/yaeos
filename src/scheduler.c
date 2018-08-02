@@ -10,6 +10,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
+#include "libuarm.h"
 #include "scheduler.h"
 
 

@@ -10,9 +10,10 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
+#include "libuarm.h"
 #include "interrupts.h"
 
 
-void interruptHandler(){
-	
+void intHandler(){
+	tprint("get\n");
 }

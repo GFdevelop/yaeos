@@ -28,4 +28,11 @@
 //~ void SYSCALL(GETPIDS, void **pid, void **ppid);
 //~ void SYSCALL(WAITCHLD);
 
+int createprocess();
+int terminateprocess();
+void semv();
+void semp();
+int spechdl();
+void gettime();
+
 #endif

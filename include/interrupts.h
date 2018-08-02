@@ -1,6 +1,6 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
-void interruptHandler();
+void intHandler();
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
-void exceptionsHandler();
+void tlbHandler();
+void pgmtrapHandler();
+void sysbkHandler();
 
 #endif

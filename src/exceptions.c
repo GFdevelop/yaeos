@@ -13,6 +13,14 @@
 #include "exceptions.h"
 
 
-void exceptionsHandler(){
+void tlbHandler(){
+	
+}
+
+void pgmtrapHandler(){
+	
+}
+
+void sysbkHandler(){
 	
 }

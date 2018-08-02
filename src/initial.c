@@ -68,8 +68,10 @@ void newArea(unsigned int address, void handler()){
 
 int main() {
 	tprint("init NEW area\n");
-	newArea(INT_NEWAREA,interruptHandler);
-	newArea(PGMTRAP_NEWAREA,exceptionsHandler);
+	newArea(INT_NEWAREA,intHandler);
+	newArea(TLB_NEWAREA,tlbHandler);
+	newArea(PGMTRAP_NEWAREA,pgmtrapHandler);
+	newArea(SYSBK_NEWAREA,sysbkHandler);
 	
 	tprint("init pcb and asl\n");
 	initPcbs();
