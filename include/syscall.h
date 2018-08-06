@@ -34,5 +34,8 @@ void semv();
 void semp();
 int spechdl();
 void gettime();
+void waitclock();
+unsigned int iodevop();
+void getpids();
 
 #endif

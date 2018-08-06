@@ -66,3 +66,22 @@ int spechdl(){
 void gettime(){
 	
 }
+
+
+void waitclock(){
+	extern pcb_t *currentPCB;
+	SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
+}
+
+unsigned int iodevop(){
+	extern pcb_t *currentPCB;
+	currentPCB->p_s.a3 = currentPCB->p_s.a2;
+	SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
+	return 0;
+}
+
+void getpids(){
+	extern pcb_t *currentPCB;
+	if (currentPCB->p_s.a2 != (unsigned int)NULL) return (void)currentPCB->p_s.a2;
+	else if (currentPCB->p_s.a3 != (unsigned int)NULL) return (void)currentPCB->p_s.a3;
+}

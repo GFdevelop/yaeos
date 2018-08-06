@@ -2,10 +2,10 @@
 #define INITIAL_H
 
 
-#define PRIO_LOW	0
-#define PRIO_NORM	1
-#define PRIO_HIGH	2
-#define PRIO_IDLE	3
+#define PRIO_IDLE	0
+#define PRIO_LOW	1
+#define PRIO_NORM	2
+#define PRIO_HIGH	3
 
 typedef unsigned int memaddr;
 typedef unsigned int cpu_t;

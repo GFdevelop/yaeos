@@ -52,8 +52,10 @@
 //~ } state_t;
 
 
-pcb_t *readyLOW, *readyNORM, *readyHIGH, *readyIDLE, *currentPCB;
+pcb_t *readyQueue[PRIO_HIGH+1];
+pcb_t *currentPCB;
 int processCount, softBlockCount;
+semd_t *io;
 
 
 void newArea(unsigned int address, void handler()){
@@ -78,26 +80,23 @@ int main() {
 	initASL();
 	
 	tprint("init variables\n");
-	readyLOW = NULL;
-	readyNORM = NULL;
-	readyHIGH = NULL;
-	readyIDLE = NULL;
+	for (int i=PRIO_IDLE; i<=PRIO_HIGH; i++) readyQueue[i] = NULL;
 	currentPCB = NULL;
 	processCount = 0;
 	softBlockCount = 0;
 	
 	tprint("init semaphores\n");
-	//int sem = 0;
+	io = NULL;
 	
 	tprint("create first pcb\n");
 	pcb_t *mainPCB = allocPcb();
 	mainPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(mainPCB->p_s.cpsr);
-	mainPCB->p_priority = PRIO_LOW;
+	mainPCB->p_priority = PRIO_IDLE;
 	mainPCB->p_s.CP15_Control = CP15_CONTROL_NULL;
 	mainPCB->p_s.cpsr = STATUS_SYS_MODE;
 	mainPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
 	mainPCB->p_s.pc = (memaddr)test;
-	insertProcQ(&readyNORM, mainPCB);
+	insertProcQ(&readyQueue[PRIO_IDLE], mainPCB);
 	
 	tprint("call scheduler\n");
 	scheduler();
