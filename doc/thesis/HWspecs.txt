@@ -78,6 +78,7 @@ Il coprocessore CP15 da accesso ad un totale di 3 registri a 64 bit e 4 registri
 		Address error 	-> 3
 		Segment error 	-> 4
 		Page error 		-> 5
+
 - Register 15 (IPC) - Interrupt Cause
 	R15.IPC mostra le linee su cui ci sono deli interrupt in attesa e, dopo che la gestione dell'interrupt si è conclusa, il valore del registro è aggiornato.
 
@@ -187,4 +188,54 @@ In aggiunta agli strumenti di supporto a basso livello, il codice del BIOS imple
 NOTE RIGUARDO ALLA SRITTURA DEI GESTORI
 Fare parecchia attenzione al valore del Program Counter nello stato del processore salvato nell'area Old. Come detto sopra, ogni eccezione lascia un valre differente nel registro Link Return e questo valore viene poi copiato automaticamente in Old.pc.
 Dunque, ad esempio, durante la gestione di Interrupt, Old.pc deve essere decrementato di 4 in modo da puntare all'istruzione di ritorno giusta. 
+
+--- BUS DI SISTEMA ---
+
+Il bus di sistema connette ogni componente del sistema e permette l'accesso alla memoria principale, ai device stessi e ad alcuni registri speciali.
+La CPU e il coprocessore di sistema CP15 possono accedere direttamente al bus leggendo o scrivendo daa/su specifici indirizzi.
+Gli indirizzi bassi (sotto 0x0000.8000) sono riservati e sono accessibili solamente sotto certe condizioni.
+
+- SPAZIO DI INDIRIZZAMENTO RISERVATO
+	L'area di memoria tra gli indirizzi 0x0000.0000 e 0x0000.8000 contiene il vettore dei fast interrupt, i registri di accesso ai device, i registri informativi di sistema, la ROM di bootstrap e il frame di memoria riservato al kernel (il primo frame di RAM). Ogni accesso a quest'area in modalità User è proibito e trattato dal bus come errore.
+	(/* foto esemplicativa reserved_mem.png */)
+
+	- VETTORE DELLE ECCEZIONI
+	I primi indiizzi del bus (0x0000.0000 -> 0x0000.001C) sono occupati dal vettore delle fast exceptions. Quando un'eccezione viene sollevata, il processore automaticamente cambia il valore del Program Counter per puntare uno di questi indirizzi. In questo modo, a patto che il sistema sia stato correttamente inizializzato, ogni istruzioni illegale porterà all'esecuzione del gestore adeguato al caso. Tipicamente questi indirizzi sono riempiti durante l'esecuzione della ROM di bootstrap. 
+	(/* foto esemplificativa exception_vect.png */) 
+
+	- VETTORE DEI DEVICE
+	Cinque word (0x0000.0020 -> 0x0000.0030) mostrano i device attivi nel sistema. Ogni word rappresenta una classe di device: per ogni parole, se l'i-esimo bit è a 1 vuol dire che l'i-esimo device di quella classe è attivo.
+
+	- REGISTRI DEI DEVICE
+	Gli indirizzi da 0x0000.0040 a 0x0000.02C0 contengono i registri dei device.
+
+	- REGISTRI INFORMATIVI DI SISTEMA
+	Sei registri, dall'indirizzo 0x0000.02D0 all'indirizzo 0x0000.02E4, contengono informazioni specifiche di sistema con l'interval timer, RAMTOP etc etc
+	(/* foto esemplificativa sysinfo_reg.png */)
+
+	- ROM DI BOOTSTRAP
+	La ROM di bootstrap è caricata a partire dall'indirizo 0x0000.0300 e la sua grandezza massima si attesta sui 109KB. Il contenuto della ROM è flashato ad ogni reboot dell'emulatore copiando ogni byte dell'immagine di input a partire dall'indirizzo di inizio della ROM.
+	Seione A.6.1 per maggiori dettagli sull'implementazione del BIOS.
+
+	- BITMAP DEGLI INTERRUPT PENDENTI
+	Tutti i device di una stessa classe ono collegati alla stessa linea di interrupt, quando uno di essi necessita di notificre qualche evento manda un messaggio attraverso la sua linea. Per identificare quale device sta rihiedendo una interruzione, ci sono 5 registri posti dall'indirizzo 0x0000.6FE0  all'indirizzo 0x0000.6FF0 che mantengono una bitmap dei device che possono richiedere una interruzione. Per ogni word, se l'i-esimo bit è messo a 1, l'i-esimo device della classe corrispondente sta richiedendo una interruzione.
+
+	- FRAME RISERVATO AL KERNEL
+	Il primo frame della memoria (0x0000.7000 -> 0x0000.7FFC) è riservato per il kernel.
+	(/* foto esemplificativa kernel_frame.png */)
+	L'area "Exception States Vector" è l'area di memoria in cui vengono salvati e da cui vengono caricati gli stati del processore quando si entra/esce dal codice dei gestori delle eccezioni. "Segment Table" contiene 128 elementi che descrivono lo spazio di indirizzamento virtuale. Per ogni ASID (un elemento della Segment Table) ci sono 3 puntatori alla ASID's page table.
+	Maggiori info alla sezione A.4.2
+
+	- STATI SALVATI DEL PROCESSORE
+	Lo stato del processore è definito dalla struttura state_t composta da 32 interi senza segno che rappresentano i valori dei registri della CPU e dei registri di controllo del coprocessore CP15.
+	(/* immagine esemplificativa state_t.png */)
+	Ognuna di queste strutture occupa 88 byte. Data questa grandezza, il codice del BIOS cercherà gli stati Old e New, per ogni eccezione, agli indirizzi in figura.
+	(/* immagine esemplificativa oldNew.png */).
+	Le aree New devono essere inizializzate durnte la fase di inizializzazione del kernel con degli stati validi del processore che puntano ai gestori delle rispettive eccezioni a livello kernel.
+
+--- SPAZIO DI INDIRIZZAMENTO DELLLA MEMORIA ---
+
+I rimanenti indirizzi, 0x0000.8000 -> RAMTOP, sono direttamente accessibili dalla CPU e dal coprocessore via bus di sistema ed è utilizzata come una normale RAM.
+
+--- INTERFACCIA DELLA MEMORIA ---
 
