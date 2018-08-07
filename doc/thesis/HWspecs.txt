@@ -237,5 +237,18 @@ Gli indirizzi bassi (sotto 0x0000.8000) sono riservati e sono accessibili solame
 
 I rimanenti indirizzi, 0x0000.8000 -> RAMTOP, sono direttamente accessibili dalla CPU e dal coprocessore via bus di sistema ed è utilizzata come una normale RAM.
 
---- INTERFACCIA DELLA MEMORIA ---
+--- BIOS ---
 
+	- SERVIZI DI LIVELLO ROM
+	I servizi a livello ROM vengono richiesti usando l'istruzione SWI (SoftWare Interrupt) con determinati parrametri e sono serviti dal codice del BIOS.
+
+		- HALT
+		Esegue SWI #1, il BIOS stamperà "SYSTEM HALTED" sul terminale 0 e spegnerà la macchina emulata.
+
+		- PANIC
+		Esegue SWI #2, il BIOS stamperà "KERNEL PANIC" sul terminale 0 e entrerà in un loop infinito.
+
+		-LDST
+		Esegue SWI #3 e inizierà a caricare lo stato del processore salvato nell'area di memoria puntata dall'inidirzzo nel registro a1.
+
+		-
