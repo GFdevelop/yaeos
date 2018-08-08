@@ -82,8 +82,8 @@ int main() {
 	tprint("init variables\n");
 	for (int i=PRIO_IDLE; i<=PRIO_HIGH; i++) readyQueue[i] = NULL;
 	currentPCB = NULL;
-	processCount = 0;
-	softBlockCount = 0;
+	processCount = 1;
+	softBlockCount = 1;
 	
 	tprint("init semaphores\n");
 	io = NULL;

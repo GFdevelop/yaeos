@@ -19,13 +19,17 @@
 
 void scheduler(){
 	extern pcb_t *readyQueue[PRIO_HIGH+1];
-	int turn = PRIO_LOW;
-	while (turn--){
+	extern int processCount;
+	extern int softBlockCount;
+	int turn = PRIO_IDLE;
+	//setTIMER(0x00000062);
+	setTIMER(MINCLOCKLOOP);
+	while (processCount){
 		//SYSCALL(SEMV, (unsigned int)readyQueue[turn], 0, 0);
-		//setTIMER(100000UL);
-		((void (*)(void))readyQueue[turn]->p_s.pc)();
+		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 		//tprint("test\n");
-		//WAIT();
+		//if (softBlockCount) WAIT();
+		//else PANIC();
 		if (!turn) turn = PRIO_HIGH;
 	}
 }

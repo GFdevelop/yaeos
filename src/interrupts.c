@@ -15,5 +15,5 @@
 
 
 void intHandler(){
-	tprint("get\n");
+	tprint("intHandler\n");
 }

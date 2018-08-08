@@ -46,6 +46,7 @@ void semv(){
 }
 
 void semp(){
+	tprint("semp\n");
 	extern pcb_t *currentPCB;
 	insertBlocked((int *)currentPCB->p_s.a2, (pcb_t *)currentPCB->p_s.a2);
 }
