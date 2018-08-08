@@ -1,19 +1,19 @@
 SHELL = /bin/sh
 PROJ = yaeos
-VERSION = 1.0.15
+VERSION = 1.1.1
 ARCH = arm7tdmi
 SRCTAR = $(PROJ)-$(VERSION)-src
 RELTAR = $(PROJ)-$(VERSION)-$(ARCH)
-EXE = p1test
+EXE = p1test p2test
 SRC = pcb asl
 LIBS = $(addprefix lib,$(SRC))
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 AR = arm-none-eabi-ar
 CFLAGS = -mcpu=$(ARCH) -Wall
-SYSLIB = /usr/include/uarm/crtso.o /usr/include/uarm/libuarm.o
-ELFSCRIPT = /usr/include/uarm/ldscripts/elf32ltsarm.h.uarmcore.x
 INC_DIR = /usr/include/uarm
+SYSLIB = $(INC_DIR)/crtso.o $(INC_DIR)/libuarm.o
+ELFSCRIPT = $(INC_DIR)/ldscripts/elf32ltsarm.h.uarmcore.x
 
 
 # don't print recipe (alternative use "@" before command)
