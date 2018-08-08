@@ -96,6 +96,7 @@ int main() {
 	mainPCB->p_s.cpsr = STATUS_SYS_MODE;
 	mainPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
 	mainPCB->p_s.pc = (memaddr)test;
+	//mainPCB->p_s.cpsr = STATUS_ENABLE_TIMER(mainPCB->p_s.cpsr);
 	insertProcQ(&readyQueue[PRIO_IDLE], mainPCB);
 	
 	tprint("call scheduler\n");

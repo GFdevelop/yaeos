@@ -22,9 +22,9 @@ void scheduler(){
 	extern int processCount;
 	extern int softBlockCount;
 	int turn = PRIO_IDLE;
-	//setTIMER(0x00000062);
-	setTIMER(MINCLOCKLOOP);
+	setTIMER(100000UL);
 	while (processCount){
+		if (readyQueue[turn] != NULL) LDST(&readyQueue[turn]->p_s);
 		//SYSCALL(SEMV, (unsigned int)readyQueue[turn], 0, 0);
 		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 		//tprint("test\n");
