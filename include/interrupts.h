@@ -1,5 +1,5 @@
-#ifndef INTERRUPT_H
-#define INTERRUPT_H
+#ifndef INTERRUPTS_H
+#define INTERRUPTS_H
 
 #include <libuarm.h>
 #include <uARMconst.h>

@@ -7,8 +7,8 @@
 #include <libuarm.h>
 
 #include <const.h>
-#include <pcb.h>
-#include <asl.h>
+#include "pcb.h"
+#include "asl.h"
 
 typedef uint8_t memaddr;
 

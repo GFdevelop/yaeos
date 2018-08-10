@@ -48,9 +48,9 @@ int main(int argc, char const *argv[]){
 	initASL();
 
 	//3. Nucleus maintained variables init
-	processCount = 0; //oppure 1?
+	processCount = 1;
 	softBlock = 0;
-	currentProcess = NULL; //oppure?
+	currentProcess = NULL;
 	for(i = PRIO_LOW; i < PRIO_IDLE; i++) readyQueues[i] = NULL;
 
 	//4. Nucleus' semaphores init
@@ -62,7 +62,7 @@ int main(int argc, char const *argv[]){
 	first->p_priority = PRIO_NORM;
 	first->p_s.CP15_Control = CP15_CONTROL_NULL;
 	first->p_s.cpsr = STATUS_SYS_MODE;
-	first->p_s.sp = RAMTOP - FRAME_SIZE;
+	first->p_s.sp = RAM_TOP - FRAMESIZE;
 	first->p_s.pc = (memaddr)test;
 	insertProcQ(&readyQueues[PRIO_NORM], first);
 	

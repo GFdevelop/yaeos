@@ -1,4 +1,4 @@
-#include <interrupt.h>
+#include <interrupts.h>
 
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 int INT_handler(){
