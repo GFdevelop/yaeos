@@ -20,43 +20,43 @@ int SYSBK_handler(){
 	
 	switch(SYSBK_Old->a1){
 		case CREATEPROCESS:
-			tprint("CREATEPROCESS");
+			tprint("CREATEPROCESS\n");
 			createprocess();
 			break;
 		case TERMINATEPROCESS:
-			tprint("TERMINATEPROCESS");
+			tprint("TERMINATEPROCESS\n");
 			terminateprocess();
 			break;
 		case SEMP:
-			tprint("SEMP");
+			tprint("SEMP\n");
 			semp();
 			break;
 		case SEMV:
-			tprint("SEMV");
+			tprint("SEMV\n");
 			semv();
 			break;
 		case SPECHDL:
-			tprint("SPECHDL");
+			tprint("SPECHDL\n");
 			spechdl();
 			break;
 		case GETTIME:
-			tprint("GETTIME");
+			tprint("GETTIME\n");
 			gettime();
 			break;
 		case WAITCLOCK:
-			tprint("WAITCLOCK");
+			tprint("WAITCLOCK\n");
 			waitclock();
 			break;
 		case IODEVOP:
-			tprint("IODEVOP");
+			tprint("IODEVOP\n");
 			iodevop();
 			break;
 		case GETPIDS:
-			tprint("GETPIDS");
+			tprint("GETPIDS\n");
 			getpids();
 			break;
 		case WAITCHLD:
-			tprint("WAITCHLD");
+			tprint("WAITCHLD\n");
 			waitchld();
 			break;
 		default:
