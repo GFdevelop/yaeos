@@ -16,4 +16,9 @@ unsigned int selectSlice();
 void ager();
 void pseudo_clock();
 
+typedef struct{
+	unsigned int start;
+	unsigned int duration; 
+}slice_t;
+
 #endif

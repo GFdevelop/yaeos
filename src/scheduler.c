@@ -1,13 +1,10 @@
 #include <scheduler.h>
 
-unsigned int aging_elapsed = 0;
-unsigned int aging_times = 0;
-
 void scheduler(){
 
 	extern pcb_t *readyQueues[4], *currentProcess;
 	extern uint8_t processCount, softBlock;
-	unsigned int turn, lastSlice = 0, aging_elapsed, isAging = 0, aging_times = 0;
+	unsigned int turn;
 
 	/*
 		Scheduler preemptive con aging.
@@ -25,21 +22,21 @@ void scheduler(){
 	if(isAging){
 		aging_times++;
 		ager();
-		isAging = 0;
-	}
-
-	//Se l'aging è stato effettuato 10 volte, sono passati 100ms. Possiamo mandare il segnale di pseudo-clock.
-	if(aging_times == 10){
-		aging_times = 0;
-		pseudo_clock();
+		aging_elapsed = 0;
+		//Se l'aging è stato effettuato 10 volte, sono passati 100ms. Possiamo mandare il segnale di pseudo-clock.
+		if(aging_times == 10){
+			aging_times = 0;
+			pseudo_clock();
+		}
 	}
 
 	//Scegliamo la lunghezza del prossimo timer
 	nextSlice = selectSlice();
 	//Se nectSlice < TIME_SLICE vuol dire che il prossimo interrupt deve essere letto come segnale di aging
-	if(nextSlice != TIME_SLICE) isAging = 1;
+	if(nextSlice != TIME_SLICE && aging_elapsed != 0) isAging = 1;
 	//Salvo il valore del timer che andrò ad impostare per dopo
-	lastSlice = nextSlice;
+	lastSlice.start = getTODLO();
+	lastSlice.duration = nextSlice;
 	//Setto il timer
 	setTIMER(nextSlice);
 
@@ -49,6 +46,7 @@ void scheduler(){
 			if(readyQueues[turn] == NULL) continue;
 			else{
 				//Codice dello scheduler
+				
 			}
 		}
 		if(!processCount){
@@ -66,13 +64,26 @@ void scheduler(){
 //La funzione ritorna il minimo il valore di TIME_SLICE e il valore (AGING_TIME - n. microsecondi passati dall'ultimo aging)
 unsigned int selectSlice(){
 	unsigned int remaining;
-	aging_elapsed += lastSlice;
-	remaining = AGING_TIME - aging_elapsed;
-	return MIN(TIME_SLICE, remaining);
+	if(isAging){
+		isAging = 0;
+		return TIME_SLICE - (getTODLO() - lastSlice.start);
+	}else{
+		aging_elapsed += lastSlice.duration;
+		remaining = AGING_TIME - aging_elapsed;
+		return MIN(TIME_SLICE, remaining);
+	}
 }
 
 void ager(){
-	//Codice dell'ager
+	unsigned int prio;
+	pcb_t *tmp;
+	for(prio = PRIO_NORM; prio >= PRIO_LOW; prio--){
+		tmp = removeProcQ(&readyQueues[prio]); 
+		while(tmp != NULL){
+			insertProcQ(&readyQueues[prio+1], tmp);
+			tmp = removeProcQ(&readyQueues[prio])
+		}
+	}
 }
 
 void pseudo_clock(){

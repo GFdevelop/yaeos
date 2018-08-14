@@ -67,6 +67,7 @@ int main(int argc, char const *argv[]){
 	insertProcQ(&readyQueues[PRIO_NORM], first);
 	
 	//6. Call to scheduler
+	memset(&lastSlice, 0, sizeof(lastSlice));
 	scheduler();
 	
 	return 0;
