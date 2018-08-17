@@ -11,7 +11,11 @@ CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 AR = arm-none-eabi-ar
 CFLAGS = -mcpu=$(ARCH) -Wall
-INC_DIR = /usr/include/uarm
+ifeq ($(shell uname),Darwin)
+	INC_DIR = /usr/local/include/uarm
+else
+	INC_DIR = /usr/include/uarm
+endif
 SYSLIB = $(INC_DIR)/crtso.o $(INC_DIR)/libuarm.o
 ELFSCRIPT = $(INC_DIR)/ldscripts/elf32ltsarm.h.uarmcore.x
 
