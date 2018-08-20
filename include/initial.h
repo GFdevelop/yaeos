@@ -1,5 +1,5 @@
-#ifndef INIT_H
-#define INIT_H
+#ifndef INITIAL_H
+#define INITIAL_H
 
 #include <uARMtypes.h>
 #include <uARMconst.h>
