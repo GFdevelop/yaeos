@@ -1,10 +1,14 @@
 #include <scheduler.h>
+#include <string.h>
 
 void scheduler(){
 
 	extern pcb_t *readyQueues[4], *currentProcess;
-	extern uint8_t processCount, softBlock;
-	unsigned int turn;
+	extern unsigned int processCount, softBlock;
+	extern unsigned int isAging, aging_times, aging_elapsed;
+	extern state_t *INT_Old;
+	extern slice_t lastSlice;
+	unsigned int turn, nextSlice;
 
 	/*
 		Scheduler preemptive con aging.
@@ -46,7 +50,8 @@ void scheduler(){
 			if(readyQueues[turn] == NULL) continue;
 			else{
 				//Codice dello scheduler
-				
+				currentProcess->p_s = *INT_Old;
+				LDST(&(readyQueues[turn]->p_s));
 			}
 		}
 		if(!processCount){
@@ -64,6 +69,8 @@ void scheduler(){
 //La funzione ritorna il minimo il valore di TIME_SLICE e il valore (AGING_TIME - n. microsecondi passati dall'ultimo aging)
 unsigned int selectSlice(){
 	unsigned int remaining;
+	extern unsigned int isAging, aging_elapsed;
+	extern slice_t lastSlice;
 	if(isAging){
 		isAging = 0;
 		return TIME_SLICE - (getTODLO() - lastSlice.start);
@@ -75,13 +82,14 @@ unsigned int selectSlice(){
 }
 
 void ager(){
+	extern pcb_t *readyQueues[4];
 	unsigned int prio;
 	pcb_t *tmp;
 	for(prio = PRIO_NORM; prio >= PRIO_LOW; prio--){
-		tmp = removeProcQ(&readyQueues[prio]); 
+		tmp = removeProcQ(&(readyQueues[prio])); 
 		while(tmp != NULL){
 			insertProcQ(&readyQueues[prio+1], tmp);
-			tmp = removeProcQ(&readyQueues[prio])
+			tmp = removeProcQ(&readyQueues[prio]);
 		}
 	}
 }

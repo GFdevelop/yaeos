@@ -1,10 +1,11 @@
 #include "interrupts.h"
 
+extern state_t *INT_Old;
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
-int INT_handler(){
+void INT_handler(){
 
-	state_t *INT_Old = (state_t *) INT_OLDAREA;
-	INT_Old->pc = INT_Old->pc - 4;
+	INT_Old = (state_t *) INT_OLDAREA;
+	INT_Old->pc -= 4;
 
 	unsigned int cause = getCAUSE();
 
@@ -34,7 +35,7 @@ int INT_handler(){
 		PANIC();
 	}
 
-	return 0;
+	return;
 }
 
 //TODO: The lower the line, the higher the priority

@@ -1,11 +1,11 @@
 #include "exceptions.h"
 
-int TLB_handler(){
-	return 0;
+void TLB_handler(){
+	return;
 }
 
-int PGMT_handler(){
-	return 0;
+void PGMT_handler(){
+	return;
 }
 
 /*
@@ -22,7 +22,7 @@ void SYSCALL(WAITCHLD);
 */
 
 //TODO: Syscalls ok, but brakpoint?
-int SYSBK_handler(){
+void SYSBK_handler(){
 
 	state_t *SYSBK_Old = (state_t *) SYSBK_OLDAREA;
 	
@@ -72,56 +72,54 @@ int SYSBK_handler(){
 			break;
 	}
 
-	return 0;
+	return;
 }
 
 // --- GFdelevop's code ---
 
 int createprocess(){
-	extern pcb_t *currentPCB;
+	extern pcb_t *currentProcess;
 	pcb_t *childPCB = allocPcb();
 	if (childPCB == NULL) return -1;
 	else {
-		insertChild(currentPCB, childPCB);
-		//memcpy(childPCB->p_s, currentPCB->p_s, 88);
-		//childPCB->p_s =  currentPCB->p_s;
+		insertChild(currentProcess, childPCB);
 		STST(&childPCB->p_s);
-		currentPCB->p_s.a4 = (unsigned int)childPCB;
+		currentProcess->p_s.a4 = (unsigned int)childPCB;
 		return 0;
 	}
 }
 
 int terminateprocess(){
-	extern pcb_t *currentPCB;
+	extern pcb_t *currentProcess;
 	pcb_t *head;
-	if (currentPCB->p_s.a2 == (int)NULL) head = currentPCB;
-	else head = (pcb_t *)currentPCB->p_s.a2;
+	if (currentProcess->p_s.a2 == (int)NULL) head = currentProcess;
+	else head = (pcb_t *)currentProcess->p_s.a2;
 	forallProcQ(head, (void *)removeProcQ, head->p_first_child);
 	removeProcQ(&head);
 	return 0;
 }
 
 void semv(){
-	extern pcb_t *currentPCB;
-	removeBlocked((int *)currentPCB->p_s.a2);
+	extern pcb_t *currentProcess;
+	removeBlocked((int *)currentProcess->p_s.a2);
 }
 
 void semp(){
 	tprint("semp\n");
-	extern pcb_t *currentPCB;
-	insertBlocked((int *)currentPCB->p_s.a2, (pcb_t *)currentPCB->p_s.a2);
+	extern pcb_t *currentProcess;
+	insertBlocked((int *)currentProcess->p_s.a2, (pcb_t *)currentProcess->p_s.a2);
 }
 
 int spechdl(){
 	// TODO: only one time for type
-	extern pcb_t *currentPCB;
+	extern pcb_t *currentProcess;
 	unsigned int area;
-	if (currentPCB->p_s.a2 == SPECSYSBP) area = SYSBK_NEWAREA;
-	else if (currentPCB->p_s.a2 == SPECTLB)  area = TLB_NEWAREA;
-	else if (currentPCB->p_s.a2 == SPECPGMT)  area = PGMTRAP_NEWAREA;
+	if (currentProcess->p_s.a2 == SPECSYSBP) area = SYSBK_NEWAREA;
+	else if (currentProcess->p_s.a2 == SPECTLB)  area = TLB_NEWAREA;
+	else if (currentProcess->p_s.a2 == SPECPGMT)  area = PGMTRAP_NEWAREA;
 	else return -1;
-	currentPCB->p_s.a3 = area;
-	area = currentPCB->p_s.a4;
+	currentProcess->p_s.a3 = area;
+	area = currentProcess->p_s.a4;
 	return 0;
 }
 
@@ -130,21 +128,21 @@ void gettime(){
 }
 
 void waitclock(){
-	extern pcb_t *currentPCB;
-	SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
+	extern pcb_t *currentProcess;
+	SYSCALL(SEMP, (unsigned int)currentProcess, 0, 0);
 }
 
 unsigned int iodevop(){
-	extern pcb_t *currentPCB;
-	currentPCB->p_s.a3 = currentPCB->p_s.a2;
-	SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
+	extern pcb_t *currentProcess;
+	currentProcess->p_s.a3 = currentProcess->p_s.a2;
+	SYSCALL(SEMP, (unsigned int)currentProcess, 0, 0);
 	return 0;
 }
 
 void getpids(){
-	extern pcb_t *currentPCB;
-	if (currentPCB->p_s.a2 != (unsigned int)NULL) return (void)currentPCB->p_s.a2;
-	else if (currentPCB->p_s.a3 != (unsigned int)NULL) return (void)currentPCB->p_s.a3;
+	extern pcb_t *currentProcess;
+	if (currentProcess->p_s.a2 != (unsigned int)NULL) return (void)currentProcess->p_s.a2;
+	else if (currentProcess->p_s.a3 != (unsigned int)NULL) return (void)currentProcess->p_s.a3;
 }
 
 //Added missing SYSCALL10

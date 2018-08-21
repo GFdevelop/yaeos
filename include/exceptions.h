@@ -1,6 +1,11 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
+#include <uARMtypes.h>
+#include <libuarm.h>
+#include <pcb.h>
+#include <asl.h>
+
 #define CREATEPROCESS 1
 #define TERMINATEPROCESS 2
 #define SEMP 3
@@ -12,9 +17,13 @@
 #define GETPIDS 9
 #define WAITCHLD 10
 
-int SYSBK_handler();
-int TLB_handler();
-int PGMT_handler();
+#define SPECSYSBP 0
+#define SPECTLB 1
+#define SPECPGMT 2
+
+void SYSBK_handler();
+void TLB_handler();
+void PGMT_handler();
 
 int createprocess();
 int terminateprocess();

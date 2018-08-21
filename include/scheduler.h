@@ -1,6 +1,9 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include <pcb.h>
+#include <libuarm.h>
+#include <uARMtypes.h>
  
 #define PRIO_IDLE 0 
 #define PRIO_LOW 1
@@ -16,7 +19,7 @@ unsigned int selectSlice();
 void ager();
 void pseudo_clock();
 
-typedef struct{
+typedef struct slice_t{
 	unsigned int start;
 	unsigned int duration; 
 }slice_t;

@@ -1,7 +1,7 @@
 #ifndef ASL_H
 #define ASL_H
 
-#include "pcb.h"
+#include <pcb.h>
 
 typedef struct semd_t{
 	struct semd_t *s_next;

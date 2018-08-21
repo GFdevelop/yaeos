@@ -1,4 +1,4 @@
-#include "initial.h"
+#include <initial.h>
 
 /* 
 
@@ -30,7 +30,7 @@ typedef struct {
  */
 
 pcb_t *readyQueues[4], *currentProcess;
-uint8_t processCount, softBlock;
+unsigned int processCount, softBlock;
 semd_t *io;
 
 int main(int argc, char const *argv[]){
@@ -57,8 +57,8 @@ int main(int argc, char const *argv[]){
 	io = NULL;
 	
 	//5. First process' PCB
-	pcb_t first = allocPcb();
-	STATUS_ALL_INT_ENABLE(first->p_s.cpsr);
+	pcb_t *first = allocPcb();
+	first->p_s.cpsr = STATUS_ALL_INT_ENABLE(first->p_s.cpsr);
 	first->p_priority = PRIO_NORM;
 	first->p_s.CP15_Control = CP15_CONTROL_NULL;
 	first->p_s.cpsr = STATUS_SYS_MODE;
@@ -67,17 +67,16 @@ int main(int argc, char const *argv[]){
 	insertProcQ(&readyQueues[PRIO_NORM], first);
 	
 	//6. Call to scheduler
-	memset(&lastSlice, 0, sizeof(lastSlice));
 	scheduler();
 	
 	return 0;
 }
 
-void newArea(uint8_t address, void handler()){
-	state_t *newArea = (state_t *)address;
+void newArea(unsigned int address, void handler()){
+	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;
 	area->cpsr = STATUS_SYS_MODE;
-	STATUS_ALL_INT_DISABLE(area->cpsr);
+	area->cpsr = STATUS_ALL_INT_DISABLE(area->cpsr);
 	area->CP15_Control = CP15_CONTROL_NULL;
 }
