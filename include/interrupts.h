@@ -2,8 +2,6 @@
 #define INTERRUPTS_H
 
 #include <uARMtypes.h>
-#include <libuarm.h>
-#include <scheduler.h>
 
 void INT_handler();
 void timer_HDL();

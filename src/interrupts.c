@@ -1,5 +1,9 @@
 #include "interrupts.h"
 
+#include "scheduler.h"
+
+#include <libuarm.h>
+
 extern state_t *INT_Old;
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 void INT_handler(){

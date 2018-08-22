@@ -1,11 +1,6 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
-#include <uARMtypes.h>
-#include <libuarm.h>
-#include <pcb.h>
-#include <asl.h>
-
 #define CREATEPROCESS 1
 #define TERMINATEPROCESS 2
 #define SEMP 3

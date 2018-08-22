@@ -10,7 +10,7 @@ LIBS = $(addprefix lib,$(SRC))
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 AR = arm-none-eabi-ar
-CFLAGS = -mcpu=$(ARCH) -Wall -std=gnu11
+CFLAGS = -mcpu=$(ARCH) -Wall -std=c99
 INC_DIR = /usr/include/uarm
 SYSLIB = $(INC_DIR)/crtso.o $(INC_DIR)/libuarm.o
 ELFSCRIPT = $(INC_DIR)/ldscripts/elf32ltsarm.h.uarmcore.x
@@ -31,5 +31,6 @@ ELFSCRIPT = $(INC_DIR)/ldscripts/elf32ltsarm.h.uarmcore.x
 
 # prerequisite name is string before ".o", ex. pcb.o:pcb.c
 %.o : %.c
+
 # "$@" file name of the target of the rule
 	$(CC) $(CFLAGS) -c $< -o $@ -I $(INC_DIR) -I ../include

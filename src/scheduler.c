@@ -1,5 +1,9 @@
-#include <scheduler.h>
-#include <string.h>
+#include "scheduler.h"
+
+#include "pcb.h"
+#include "initial.h"
+
+#include <libuarm.h>
 
 void scheduler(){
 
@@ -51,6 +55,7 @@ void scheduler(){
 			else{
 				//Codice dello scheduler
 				currentProcess->p_s = *INT_Old;
+				currentProcess = readyQueues[turn];
 				LDST(&(readyQueues[turn]->p_s));
 			}
 		}

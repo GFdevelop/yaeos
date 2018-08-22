@@ -1,5 +1,11 @@
 #include "exceptions.h"
 
+#include "pcb.h"
+#include "asl.h"
+
+#include <uARMtypes.h>
+#include <libuarm.h>
+
 void TLB_handler(){
 	return;
 }

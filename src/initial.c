@@ -1,4 +1,13 @@
-#include <initial.h>
+#include "initial.h"
+
+#include "pcb.h"
+#include "asl.h"
+
+#include "interrupts.h"
+#include "exceptions.h"
+#include "scheduler.h"
+
+#include <arch.h>
 
 /* 
 
@@ -32,6 +41,10 @@ typedef struct {
 pcb_t *readyQueues[4], *currentProcess;
 unsigned int processCount, softBlock;
 semd_t *io;
+
+unsigned int aging_elapsed = 0;
+unsigned int aging_times = 0;
+unsigned int isAging = 0;
 
 int main(int argc, char const *argv[]){
 

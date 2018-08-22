@@ -1,10 +1,8 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <pcb.h>
-#include <libuarm.h>
-#include <uARMtypes.h>
- 
+#include <stddef.h>
+
 #define PRIO_IDLE 0 
 #define PRIO_LOW 1
 #define PRIO_NORM 2
@@ -23,5 +21,15 @@ typedef struct slice_t{
 	unsigned int start;
 	unsigned int duration; 
 }slice_t;
+
+slice_t lastSlice;
+
+void *memcpy (void *dest, const void *src, size_t len){
+  char *d = dest;
+  const char *s = src;
+  while (len--)
+    *d++ = *s++;
+  return dest;
+}
 
 #endif
