@@ -227,9 +227,17 @@ void p4b(void) {
 	SYSCALL(SEMP, (memaddr)&testp5, 0, 0);
 
 	/* second call for SPECTRAPVEC/SPECPGMT terminate! */
-	SYSCALL(SPECHDL, SPECPGMT, (int)&p4pgm_old, (int)&p4pgm_new);
+	//~ SYSCALL(SPECHDL, SPECPGMT, (int)&p4pgm_old, (int)&p4pgm_new);
 
-	print("error - p4b still executing\n");
+	//~ print("error - p4b still executing\n");
+	//~ PANIC();
+	if (SYSCALL(SPECHDL, SPECPGMT, (int)&p4pgm_old, (int)&p4pgm_new) != -1) {
+		print("error - p4b ran SPECHDL twice for SPECPGMT);
+		PANIC();
+	}
+	SYSCALL(TERMINATEPROCESS, 0, 0, 0);
+	
+	print("P4b survived a terminate process syscall\n");
 	PANIC();
 }
 
@@ -330,6 +338,7 @@ void test(void) {
 	void *p1addr, *p0addr, *p0paddr;
 	STST(&p1state);
 	next_stack = (p1state.sp + QPAGE_1) & ~QPAGE_1;
+	next_stack -= QPAGE;
 	p1state.sp = get_stack_area();
 	p1state.pc = (memaddr) p1;
 
