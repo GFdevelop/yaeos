@@ -1,7 +1,6 @@
 #include "scheduler.h"
 
 #include "pcb.h"
-#include "initial.h"
 
 #include <libuarm.h>
 
@@ -10,7 +9,7 @@ void scheduler(){
 	extern pcb_t *readyQueues[4], *currentProcess;
 	extern unsigned int processCount, softBlock;
 	extern unsigned int isAging, aging_times, aging_elapsed;
-	extern state_t *INT_Old;
+	extern state_t* INT_Old;
 	extern slice_t lastSlice;
 	unsigned int turn, nextSlice;
 
@@ -51,10 +50,9 @@ void scheduler(){
 	//Se l'interrupt arrivato è di aging lo scheduler non deve rimpiazzare il processo correntemente in esecuzione, altrimenti sì
 	if(!isAging){
 		for(turn = PRIO_HIGH; turn >= PRIO_IDLE; turn--){
-			if(readyQueues[turn] == NULL) continue;
-			else{
+			if(readyQueues[turn] != NULL){
 				//Codice dello scheduler
-				currentProcess->p_s = *INT_Old;
+				//currentProcess->p_s = *INT_Old;
 				currentProcess = readyQueues[turn];
 				LDST(&(readyQueues[turn]->p_s));
 			}
@@ -70,6 +68,7 @@ void scheduler(){
 		}
 	} 
 }
+
 
 //La funzione ritorna il minimo il valore di TIME_SLICE e il valore (AGING_TIME - n. microsecondi passati dall'ultimo aging)
 unsigned int selectSlice(){
