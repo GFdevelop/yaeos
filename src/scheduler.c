@@ -52,7 +52,6 @@ void scheduler(){
 		for(turn = PRIO_HIGH; turn >= PRIO_IDLE; turn--){
 			if(readyQueues[turn] != NULL){
 				//Codice dello scheduler
-				//currentProcess->p_s = *INT_Old;
 				currentProcess = readyQueues[turn];
 				LDST(&(readyQueues[turn]->p_s));
 			}
@@ -100,4 +99,5 @@ void ager(){
 
 void pseudo_clock(){
 	//codice dello pseudo_clock
+	//V on the semaphore mantained semaphore (see pag. 131)
 }
