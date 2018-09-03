@@ -2,11 +2,14 @@
 
 #include "pcb.h"
 #include "scheduler.h"
+#include "initial.h"
+#include "exceptions.h"
 
 #include <libuarm.h>
+#include <arch.h>
 
 extern state_t *INT_Old;
-extern pcb_t *currentProcess;
+extern pcb_t *currentProcess, *readyQueues[4];
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 void INT_handler(){
 
@@ -35,7 +38,7 @@ void INT_handler(){
 		tprint("Printer interrupt\n");
 		device_HDL(INT_PRINTER);
 	}else if(CAUSE_IP_GET(cause, INT_TERMINAL)){
-		tprint("Terminal interrupt\n");
+		//tprint("Terminal interrupt\n");
 		terminal_HDL();
 	}else{
 		tprint("Interrupt not recognized!\n");
@@ -48,15 +51,66 @@ void INT_handler(){
 //TODO: The lower the line, the higher the priority
 void timer_HDL(){
 	scheduler();
-	//TODO: Distinguish between 3ms slice expiration and 100ms pseudo-clock
 }
 
 void device_HDL(unsigned int device){
-
+	return;
 }
 
+/*
+Acknowledge the outstanding interrupt. 
+For all devices except the Interval Timer this is accomplished by writing the acknowledge command code in the interrupting device’s COMMAND device register. 
+Alternatively, writing a new command in the interrupting device’s device register will also acknowledge the interrupt. 
+An interrupt for a timer device is acknowledged by loading the timer with a new value.
+Initialize all nucleus maintained semaphores. In addition to the above nucleus
+variables, there is one semaphore variable for each external (sub)device in μARM,
+plus a semaphore to represent a pseudo-clock timer. Since terminal devices are
+actually two independent sub-devices (see Section 5.7-pops), the nucleus maintains
+two semaphores for each terminal device. All of these semaphores need to be
+initialized to zero.
+*/
 void terminal_HDL(){
+	//ACK the interrupt with DEV_C_ACK in commmand register of the device
+	//Perform a V operation (weight 1) on the nucleus maintained semaphore associated
+    //with the interrupting (sub)device if the semaphore has value less than 1.
+	//nucleus should mantain 2 semaphore for each terminl sub-device
 	//TODO: Handle terminal priority
+
+	//1. Determinare quale dei teminali ha generato l'interrupt
+	//2. Determinare se l'interrupt deriva da una scrittura, una letturaa o entrambi
+	//Se due interrupt arrivano insieme, devono essere entrambi ack per avere la giusta device mapbit
+
+	//tprint("Here\n");
+	memaddr *line, *term_start, *recv_status, *recv_cmd, *transm_status, *transm_cmd;
+	unsigned int terminal_no = 0;
+
+	line = (memaddr *)IDEV_BITMAP_ADDR(INT_TERMINAL);
+	while(*line > 0){
+		if(*line & 1) break;
+		else{
+			terminal_no++;
+			*line = *line >> 1;
+		}	
+	}
+	term_start = (memaddr *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+	recv_status = (memaddr *) term_start + RSTAT;
+	recv_cmd = (memaddr *) term_start + RCMD;
+	transm_status = (memaddr *) term_start + TSTAT;
+	transm_cmd = (memaddr *) term_start + TCMD + 0x2;
+
+	if((*recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		*recv_cmd = DEV_C_ACK;
+	}else if((*transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		*transm_cmd = DEV_C_ACK;
+	}
+
+	//SYSCALL(SEMV, (unsigned int)currentProcess, 0, 0);
+	insertProcQ(&readyQueues[1], currentProcess);
+	/*
+	Softcount --
+	gestione semafori e ready queue
+	*/
+
 }
 
 void SVST(state_t *A, state_t *B){
