@@ -7,7 +7,10 @@
 #include "exceptions.h"
 #include "scheduler.h"
 
+#include <uARMconst.h>
 #include <arch.h>
+
+#define NDEVICES (DEV_PER_INT * (DEV_USED_INTS + 1))
 
 /* 
 
@@ -40,7 +43,7 @@ typedef struct {
 
 pcb_t *readyQueues[4], *currentProcess;
 unsigned int processCount, softBlock;
-semd_t *io, *termR[DEV_PER_INT], *termW[DEV_PER_INT];
+unsigned int *sem_devices[NDEVICES], *sem_pseudoclock;
 
 unsigned int aging_elapsed = 0;
 unsigned int aging_times = 0;
@@ -67,12 +70,9 @@ int main(int argc, char const *argv[]){
 	for(i = PRIO_LOW; i < PRIO_IDLE; i++) readyQueues[i] = NULL;
 
 	//4. Nucleus' semaphores init
-	for(i = 0; i < DEV_PER_INT; i++){
-		termW[i] = NULL;
-		termR[i] = NULL;
-	}
-	io = NULL;
-	
+	for(i = 0; i < NDEVICES; i++) sem_devices[i] = 0;
+	sem_pseudoclock = 0;
+
 	//5. First process' PCB
 	pcb_t *first = allocPcb();
 	first->p_s.cpsr = STATUS_ALL_INT_ENABLE(first->p_s.cpsr);
