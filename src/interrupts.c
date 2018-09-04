@@ -5,6 +5,7 @@
 #include "initial.h"
 #include "exceptions.h"
 
+#include <uARMtypes.h>
 #include <libuarm.h>
 #include <arch.h>
 
@@ -38,7 +39,7 @@ void INT_handler(){
 		tprint("Printer interrupt\n");
 		device_HDL(INT_PRINTER);
 	}else if(CAUSE_IP_GET(cause, INT_TERMINAL)){
-		//tprint("Terminal interrupt\n");
+		tprint("Terminal interrupt\n");
 		terminal_HDL();
 	}else{
 		tprint("Interrupt not recognized!\n");
@@ -81,9 +82,12 @@ void terminal_HDL(){
 	//Se due interrupt arrivano insieme, devono essere entrambi ack per avere la giusta device mapbit
 
 	//tprint("Here\n");
-	memaddr *line, *term_start, *recv_status, *recv_cmd, *transm_status, *transm_cmd;
+	termreg_t *term;
+	memaddr *line, *term_start;
 	unsigned int terminal_no = 0;
 
+
+	//1. Determinare quale dei teminali ha generato l'interrupt
 	line = (memaddr *)IDEV_BITMAP_ADDR(INT_TERMINAL);
 	while(*line > 0){
 		if(*line & 1) break;
@@ -92,20 +96,42 @@ void terminal_HDL(){
 			*line = *line >> 1;
 		}	
 	}
-	term_start = (memaddr *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
-	recv_status = (memaddr *) term_start + RSTAT;
-	recv_cmd = (memaddr *) term_start + RCMD;
-	transm_status = (memaddr *) term_start + TSTAT;
-	transm_cmd = (memaddr *) term_start + TCMD + 0x2;
+	
+	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
+	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+	//term = (termreg_t *) term_start;
+	tprint("Here2\n");
+	/*recv_status = (termreg_t *) term_start + RSTAT;
+	recv_cmd = (termreg_t *) term_start + RCMD;
+	transm_status = (termreg_t *) term_start + TSTAT;
+	transm_cmd = (termreg_t *) term_start + TCMD + 0x2;*/
 
-	if((*recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		*recv_cmd = DEV_C_ACK;
-	}else if((*transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		*transm_cmd = DEV_C_ACK;
+	if (term->recv_status == 0) tprint ("R0\n");
+  	else if (term->recv_status == 1) tprint ("R1\n");
+  	else if (term->recv_status == 2) tprint ("R2\n");
+  	else if (term->recv_status == 3) tprint ("R3\n");
+  	else if (term->recv_status == 4) tprint ("R4\n");
+  	else if (term->recv_status == 5) tprint ("R5\n");
+
+  	if ((term->transm_status & DEV_TERM_STATUS) == 0) tprint ("T0\n");
+  	else if ((term->transm_status & DEV_TERM_STATUS) == 1) tprint ("T1\n");
+  	else if ((term->transm_status & DEV_TERM_STATUS) == 2) tprint ("T2\n");
+  	else if ((term->transm_status & DEV_TERM_STATUS) == 3) tprint ("T3\n");
+  	else if ((term->transm_status & DEV_TERM_STATUS) == 4) tprint ("T4\n");
+  	else if ((term->transm_status & DEV_TERM_STATUS) == 5) tprint ("T5\n");
+
+	tprint("Here3\n");
+	if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		term->recv_command = DEV_C_ACK;
+		tprint("Here4\n");
+	}else if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		term->transm_command = DEV_C_ACK;
+
 	}
-
+	tprint("Here6\n");
 	//SYSCALL(SEMV, (unsigned int)currentProcess, 0, 0);
 	insertProcQ(&readyQueues[1], currentProcess);
+	//tprint("Here7\n");
 	/*
 	Softcount --
 	gestione semafori e ready queue

@@ -3,10 +3,10 @@
 
 #include <uARMtypes.h>
 
-#define RSTAT 0x0
-#define RCMD 0x4
-#define TSTAT 0x8
-#define TCMD 0xC
+#define RSTAT 0x00
+#define RCMD 0x04
+#define TSTAT 0x08
+#define TCMD 0x0C
 
 void INT_handler();
 void timer_HDL();
