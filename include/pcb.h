@@ -12,7 +12,11 @@ typedef struct pcb_t {
 	struct pcb_t *p_sib;
 	state_t p_s;
 	int p_priority;
-	int *p_semKey;	
+	int *p_semKey;
+
+	unsigned int start_time;
+	unsigned int user_time;
+	unsigned int kernel_time;	
 }pcb_t;
 
 /**** PCB queue management ****/

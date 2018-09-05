@@ -11,15 +11,6 @@
 #define PSEUDO_TIME 100000
 
 void scheduler();
-unsigned int selectSlice();
-void ager();
-void pseudo_clock();
-
-typedef struct slice_t{
-	unsigned int start;
-	unsigned int duration; 
-}slice_t;
-
-slice_t lastSlice;
+unsigned int nextSlice();
 
 #endif
