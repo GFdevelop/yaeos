@@ -8,96 +8,67 @@ void scheduler(){
 
 	extern pcb_t *readyQueues[4], *currentProcess;
 	extern unsigned int processCount, softBlock;
-	extern unsigned int isAging, aging_times, aging_elapsed;
-	extern state_t* INT_Old;
-	extern slice_t lastSlice;
-	unsigned int turn, nextSlice;
+	extern unsigned int isAging, aging_elapsed, aging_times, curProc_start, kernelStart;
+	unsigned int slice, turn;
 
-	/*
-		Scheduler preemptive con aging.
-		Time-Sclice = 3ms 
-		Ogni 10ms la priorità viene aumentata di 1 fino a PRIO_HIGH
-
-		readyQueues[0...3] = NULL
-		+ precessCount = 0 ---> SHUTDOWN (HALT())
-		+ softBlockCount > 0 ---> WAIT()
-		+ softBlockCount = 0 ---> DEADLOCK (PANIC())
-	*/
-
-	//Codice eseguito solo se l'ultimo timer settato non è uguale alla lunghezza di un TIME_SLICE
-	//ma è minore in quanto è il tempo restante per arrivare al AGING_TIME
+	//4. AGING: di norma slice = TIME_SLICE ma, se il tempo mancante per l'aging < TIME_SLICE
+	//il prossimo timer viene settato a questa quantità e l'interrupt deve essere interpretato in tal senso 
 	if(isAging){
-		aging_times++;
-		ager();
-		aging_elapsed = 0;
-		//Se l'aging è stato effettuato 10 volte, sono passati 100ms. Possiamo mandare il segnale di pseudo-clock.
-		if(aging_times == 10){
-			aging_times = 0;
-			pseudo_clock();
-		}
+		unsigned int prio;
+		pcb_t *tmp = NULL;
+
+		isAging = 0;
+		aging_elapsed = 0;	
+		for(prio = PRIO_HIGH; prio >= PRIO_LOW; prio--){	
+			while(headProcQ(readyQueues[prio]) != NULL){
+				tmp = removeProcQ(&readyQueues[prio]);
+				tmp->p_priority += 1;
+				insertProcQ(&readyQueues[prio+1], tmp);
+			}
+		}	
+
+		aging_times += 1;
 	}
-
-	//Scegliamo la lunghezza del prossimo timer
-	nextSlice = selectSlice();
-	//Se nectSlice < TIME_SLICE vuol dire che il prossimo interrupt deve essere letto come segnale di aging
-	if(nextSlice != TIME_SLICE && aging_elapsed != 0) isAging = 1;
-	//Salvo il valore del timer che andrò ad impostare per dopo
-	lastSlice.start = getTODLO();
-	lastSlice.duration = nextSlice;
-	//Setto il timer
-	setTIMER(nextSlice);
-
-	//Se l'interrupt arrivato è di aging lo scheduler non deve rimpiazzare il processo correntemente in esecuzione, altrimenti sì
-	if(!isAging){
-		for(turn = PRIO_HIGH; turn >= PRIO_IDLE; turn--){
-			if(readyQueues[turn] != NULL){
-				//Codice dello scheduler
-				currentProcess = readyQueues[turn];
-				LDST(&(readyQueues[turn]->p_s));
+	//1. Alla fine di ogni TIME_SLICE, currentProcess viene rimesso a NULL
+	if(currentProcess == NULL){
+		for(turn = PRIO_HIGH; turn >= PRIO_NORM; turn--){	//Selezioniamo un nuovo processo
+			if(headProcQ(readyQueues[turn]) != NULL){
+				slice = nextSlice();	//Selezioniamo la durata del nuovo timer
+				currentProcess = removeProcQ(&readyQueues[turn]);	//rimuoviamo il prcesso dalla coda, se tutto va bene sarà rimesso in coda poi
 			}
 		}
-		if(!processCount){
-			tprint("processCount = 0, SHUTDOWN\n");
-			HALT();
-		}else{
-			if(!softBlock){
-				tprint("System is deadlocked, sir. PANIC!\n");
-				PANIC();
-			}else WAIT();
+		//2. Deadlock detection
+		if(currentProcess == NULL){
+			if(processCount == 0){
+				tprint("processCount = 0, SHUTDOWN\n");
+				HALT();
+			}else{
+				if(softBlock == 0){
+					tprint("System is deadlocked, sir. PANIC!\n");
+					PANIC();
+				}else WAIT();
+			}
 		}
-	} 
-}
-
-
-//La funzione ritorna il minimo il valore di TIME_SLICE e il valore (AGING_TIME - n. microsecondi passati dall'ultimo aging)
-unsigned int selectSlice(){
-	unsigned int remaining;
-	extern unsigned int isAging, aging_elapsed;
-	extern slice_t lastSlice;
-	if(isAging){
-		isAging = 0;
-		return TIME_SLICE - (getTODLO() - lastSlice.start);
+	//3. Ci troviamo in questo caso se un processo viene interrotto durante la sua esecuzione
 	}else{
-		aging_elapsed += lastSlice.duration;
-		remaining = AGING_TIME - aging_elapsed;
-		return MIN(TIME_SLICE, remaining);
+		//Addebito il tempo trascorso in kernel mode dal processo
+		currentProcess->kernel_time += (getTODLO() - kernelStart); 
+		//Il nuovo valore del timer sarà il tempo rimanente
+		slice = TIME_SLICE - (kernelStart - curProc_start);
 	}
+
+	setTIMER(slice);	//Setto effettivamente il prossimo timer
+	curProc_start = getTODLO();	
+	LDST(&currentProcess->p_s);	//Ricomincia la festa!
+
 }
 
-void ager(){
-	extern pcb_t *readyQueues[4];
-	unsigned int prio;
-	pcb_t *tmp;
-	for(prio = PRIO_NORM; prio >= PRIO_LOW; prio--){
-		tmp = removeProcQ(&(readyQueues[prio])); 
-		while(tmp != NULL){
-			insertProcQ(&readyQueues[prio+1], tmp);
-			tmp = removeProcQ(&readyQueues[prio]);
-		}
-	}
-}
+unsigned int nextSlice(){
+	extern unsigned int aging_elapsed, isAging, curProc_start;
+	unsigned int slice;
 
-void pseudo_clock(){
-	//codice dello pseudo_clock
-	//V on the semaphore mantained semaphore (see pag. 131)
+	aging_elapsed += (getTODLO() - curProc_start);
+	slice = MIN(TIME_SLICE, (AGING_TIME - aging_elapsed));
+	if(slice < TIME_SLICE) isAging = 1;
+	return slice;
 }

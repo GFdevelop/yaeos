@@ -78,6 +78,7 @@ void SYSBK_handler(){
 			break;
 	}
 
+	//scheduler();
 	return;
 }
 

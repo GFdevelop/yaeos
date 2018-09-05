@@ -11,12 +11,14 @@
 
 extern state_t *INT_Old;
 extern pcb_t *currentProcess, *readyQueues[4];
+extern unsigned int softBlock, kernelStart;
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 void INT_handler(){
 
+	kernelStart = getTODLO();
 	INT_Old = (state_t *) INT_OLDAREA;
 	INT_Old->pc -= 4;
-	SVST(INT_Old, &currentProcess->p_s);
+	SVST(&currentProcess->p_s, INT_Old);
 
 	unsigned int cause = getCAUSE();
 
@@ -46,44 +48,35 @@ void INT_handler(){
 		PANIC();
 	}
 
+	scheduler();
+
 	return;
 }
 
 //TODO: The lower the line, the higher the priority
 void timer_HDL(){
-	scheduler();
+	extern unsigned int aging_times, isAging;
+	extern pcb_t *currentProcess;
+
+	if(aging_times == 10){
+		aging_times = 0;
+		//pseudo-clock()
+	}
+
+	if(!isAging){
+		insertProcQ(&readyQueues[currentProcess->p_priority], currentProcess);
+		currentProcess = NULL;
+	}
 }
 
 void device_HDL(unsigned int device){
 	return;
 }
 
-/*
-Acknowledge the outstanding interrupt. 
-For all devices except the Interval Timer this is accomplished by writing the acknowledge command code in the interrupting device’s COMMAND device register. 
-Alternatively, writing a new command in the interrupting device’s device register will also acknowledge the interrupt. 
-An interrupt for a timer device is acknowledged by loading the timer with a new value.
-Initialize all nucleus maintained semaphores. In addition to the above nucleus
-variables, there is one semaphore variable for each external (sub)device in μARM,
-plus a semaphore to represent a pseudo-clock timer. Since terminal devices are
-actually two independent sub-devices (see Section 5.7-pops), the nucleus maintains
-two semaphores for each terminal device. All of these semaphores need to be
-initialized to zero.
-*/
 void terminal_HDL(){
-	//ACK the interrupt with DEV_C_ACK in commmand register of the device
-	//Perform a V operation (weight 1) on the nucleus maintained semaphore associated
-    //with the interrupting (sub)device if the semaphore has value less than 1.
-	//nucleus should mantain 2 semaphore for each terminl sub-device
-	//TODO: Handle terminal priority
 
-	//1. Determinare quale dei teminali ha generato l'interrupt
-	//2. Determinare se l'interrupt deriva da una scrittura, una letturaa o entrambi
-	//Se due interrupt arrivano insieme, devono essere entrambi ack per avere la giusta device mapbit
-
-	//tprint("Here\n");
 	termreg_t *term;
-	memaddr *line, *term_start;
+	memaddr *line;
 	unsigned int terminal_no = 0;
 
 
@@ -99,43 +92,14 @@ void terminal_HDL(){
 	
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
-	//term = (termreg_t *) term_start;
-	tprint("Here2\n");
-	/*recv_status = (termreg_t *) term_start + RSTAT;
-	recv_cmd = (termreg_t *) term_start + RCMD;
-	transm_status = (termreg_t *) term_start + TSTAT;
-	transm_cmd = (termreg_t *) term_start + TCMD + 0x2;*/
-
-	if (term->recv_status == 0) tprint ("R0\n");
-  	else if (term->recv_status == 1) tprint ("R1\n");
-  	else if (term->recv_status == 2) tprint ("R2\n");
-  	else if (term->recv_status == 3) tprint ("R3\n");
-  	else if (term->recv_status == 4) tprint ("R4\n");
-  	else if (term->recv_status == 5) tprint ("R5\n");
-
-  	if ((term->transm_status & DEV_TERM_STATUS) == 0) tprint ("T0\n");
-  	else if ((term->transm_status & DEV_TERM_STATUS) == 1) tprint ("T1\n");
-  	else if ((term->transm_status & DEV_TERM_STATUS) == 2) tprint ("T2\n");
-  	else if ((term->transm_status & DEV_TERM_STATUS) == 3) tprint ("T3\n");
-  	else if ((term->transm_status & DEV_TERM_STATUS) == 4) tprint ("T4\n");
-  	else if ((term->transm_status & DEV_TERM_STATUS) == 5) tprint ("T5\n");
-
-	tprint("Here3\n");
+	
 	if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
 		term->recv_command = DEV_C_ACK;
-		tprint("Here4\n");
 	}else if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
 		term->transm_command = DEV_C_ACK;
-
 	}
-	tprint("Here6\n");
-	//SYSCALL(SEMV, (unsigned int)currentProcess, 0, 0);
-	insertProcQ(&readyQueues[1], currentProcess);
-	//tprint("Here7\n");
-	/*
-	Softcount --
-	gestione semafori e ready queue
-	*/
+	
+	insertProcQ(&readyQueues[currentProcess->p_priority], currentProcess);
 
 }
 
