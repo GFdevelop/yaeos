@@ -11,10 +11,13 @@
 
 
 #include "libuarm.h"
+#include <arch.h>
 #include "pcb.h"
 #include "asl.h"
 #include "syscall.h"
 #include "exceptions.h"
+#include "interrupts.h"
+#include "scheduler.h"
 
 
 void tlbHandler(){
@@ -27,8 +30,15 @@ void pgmtrapHandler(){
 
 void sysbkHandler(){
 	tprint("sysbkHandler\n");
-	extern pcb_t *currentPCB;
-	switch(currentPCB->p_s.a1){
+	extern pcb_t *currentPCB, *readyQueue;
+	
+	state_t *old = (state_t *)SYSBK_OLDAREA;
+	if (currentPCB) {
+		old->pc -= WORD_SIZE;
+		SVST(old, &currentPCB->p_s);
+	}
+	
+	switch(old->a1){
 		case(CREATEPROCESS):
 			createprocess();
 			break;
@@ -57,5 +67,10 @@ void sysbkHandler(){
 			getpids();
 			break;
 	}
+	
+	
 	tprint("end\n");
+	
+	insertProcQ(&readyQueue, currentPCB);
+	scheduler();
 }

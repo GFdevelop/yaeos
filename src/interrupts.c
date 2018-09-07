@@ -19,39 +19,14 @@
 #include "interrupts.h"
 #include "scheduler.h"
 
-void SVST(state_t *A, state_t *B){
-	B->a1 = A->a1;
-	B->a2 = A->a2;
-	B->a3 = A->a3;
-	B->a4 = A->a4;
-	B->v1 = A->v1;
-	B->v2 = A->v2;
-	B->v3 = A->v3;
-	B->v4 = A->v4;
-	B->v5 = A->v5;
-	B->v6 = A->v6;
-	B->sl = A->sl;
-	B->fp = A->fp;
-	B->ip = A->ip;
-	B->sp = A->sp;
-	B->lr = A->lr;
-	B->pc = A->pc;
-	B->cpsr = A->cpsr;
-	B->CP15_Control = A->CP15_Control;
-	B->CP15_EntryHi = A->CP15_EntryHi;
-	B->CP15_Cause = A->CP15_Cause;
-	B->TOD_Hi = A->TOD_Hi;
-	B->TOD_Low = A->TOD_Low;
-}
-
 void intHandler(){
 	//tprint("intHandler\n");
 	extern pcb_t *readyQueue, *currentPCB;
 	
-	state_t *oldState = (state_t *)INT_OLDAREA;
+	state_t *old = (state_t *)INT_OLDAREA;
 	if (currentPCB) {
-		(*oldState).pc -= WORD_SIZE;
-		SVST(oldState, &currentPCB->p_s);
+		old->pc -= WORD_SIZE;
+		SVST(old, &currentPCB->p_s);
 	}
 	
 	if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TIMER)){
@@ -117,4 +92,29 @@ void terminal_HDL(){
 	}else if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
 		term->transm_command = DEV_C_ACK;
 	}
+}
+
+void SVST(state_t *A, state_t *B){
+	B->a1 = A->a1;
+	B->a2 = A->a2;
+	B->a3 = A->a3;
+	B->a4 = A->a4;
+	B->v1 = A->v1;
+	B->v2 = A->v2;
+	B->v3 = A->v3;
+	B->v4 = A->v4;
+	B->v5 = A->v5;
+	B->v6 = A->v6;
+	B->sl = A->sl;
+	B->fp = A->fp;
+	B->ip = A->ip;
+	B->sp = A->sp;
+	B->lr = A->lr;
+	B->pc = A->pc;
+	B->cpsr = A->cpsr;
+	B->CP15_Control = A->CP15_Control;
+	B->CP15_EntryHi = A->CP15_EntryHi;
+	B->CP15_Cause = A->CP15_Cause;
+	B->TOD_Hi = A->TOD_Hi;
+	B->TOD_Low = A->TOD_Low;
 }

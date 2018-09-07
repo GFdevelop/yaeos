@@ -41,13 +41,26 @@ int terminateprocess(){
 }
 
 void semv(){
-	extern pcb_t *currentPCB;
-	removeBlocked((int *)currentPCB->p_s.a2);
+	tprint("semv\n");
+	extern pcb_t *currentPCB, *readyQueue;
+	insertProcQ(&readyQueue,removeBlocked((int *)currentPCB->p_s.a2));
+	unsigned int value = currentPCB->p_s.a2;
+	value++;
 }
 
 void semp(){
 	tprint("semp\n");
-	extern pcb_t *currentPCB;
+	extern pcb_t *currentPCB, *readyQueue;
+	extern unsigned int softBlockCount;
+	int *value = (int *)currentPCB->p_s.a2;
+	if (!value) {
+		currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr);
+		WAIT();
+	}
+	*value -= 1;
+	outProcQ(&readyQueue,currentPCB);
+	currentPCB = NULL;
+	softBlockCount += 1;
 	insertBlocked((int *)currentPCB->p_s.a2, (pcb_t *)currentPCB->p_s.a2);
 }
 

@@ -7,6 +7,8 @@
 #define PRIO_NORM	2
 #define PRIO_HIGH	3
 
+#define NDEVICES (DEV_PER_INT * (DEV_USED_INTS + 1))
+
 typedef unsigned int memaddr;
 typedef unsigned int cpu_t;
 

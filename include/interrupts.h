@@ -5,5 +5,6 @@ void intHandler();
 void timer_HDL();
 void device_HDL();
 void terminal_HDL();
+void SVST(state_t *A, state_t *B);
 
 #endif

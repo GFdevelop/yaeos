@@ -54,7 +54,7 @@
 
 pcb_t *readyQueue, *currentPCB;
 int processCount, softBlockCount;
-semd_t *io;
+int semDev[NDEVICES];
 
 
 void newArea(unsigned int address, void handler()){
@@ -63,6 +63,7 @@ void newArea(unsigned int address, void handler()){
 	area->sp = RAM_TOP;
 	area->cpsr = STATUS_SYS_MODE;
 	area->cpsr = STATUS_ALL_INT_DISABLE(area->cpsr);
+	//area->cpsr = STATUS_ENABLE_TIMER(area->cpsr);
 	area->CP15_Control = CP15_CONTROL_NULL;
 }
 
@@ -85,7 +86,7 @@ int main() {
 	softBlockCount = 0;
 	
 	tprint("init semaphores\n");
-	io = NULL;
+	for (int i=0; i<NDEVICES; i++) semDev[i]=1;
 	
 	tprint("create first pcb\n");
 	currentPCB = allocPcb();
