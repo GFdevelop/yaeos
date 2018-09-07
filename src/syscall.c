@@ -17,6 +17,7 @@
 
 
 int createprocess(){
+	tprint("createprocess\n");
 	extern pcb_t *currentPCB;
 	pcb_t *childPCB = allocPcb();
 	if (childPCB == NULL) return -1;
@@ -31,6 +32,7 @@ int createprocess(){
 }
 
 int terminateprocess(){
+	tprint("terminateprocess\n");
 	extern pcb_t *currentPCB;
 	pcb_t *head;
 	if (currentPCB->p_s.a2 == (int)NULL) head = currentPCB;
@@ -43,28 +45,29 @@ int terminateprocess(){
 void semv(){
 	tprint("semv\n");
 	extern pcb_t *currentPCB, *readyQueue;
-	insertProcQ(&readyQueue,removeBlocked((int *)currentPCB->p_s.a2));
-	unsigned int value = currentPCB->p_s.a2;
-	value++;
+	extern unsigned int softBlockCount;
+	int *value = (int *)currentPCB->p_s.a2;
+	//insertProcQ(&readyQueue,removeBlocked(value));	// insertProcQ here and on exit from excepionsHDL?!?!?!?
+	removeBlocked(value);
+	if (softBlockCount) softBlockCount--;
+	*value += 1;
 }
 
 void semp(){
 	tprint("semp\n");
-	extern pcb_t *currentPCB, *readyQueue;
+	extern pcb_t *currentPCB;
 	extern unsigned int softBlockCount;
 	int *value = (int *)currentPCB->p_s.a2;
-	if (!value) {
-		currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr);
-		WAIT();
-	}
 	*value -= 1;
-	outProcQ(&readyQueue,currentPCB);
-	currentPCB = NULL;
-	softBlockCount += 1;
-	insertBlocked((int *)currentPCB->p_s.a2, (pcb_t *)currentPCB->p_s.a2);
+	if (*value < 0) {
+		softBlockCount += 1;
+		insertBlocked(value, currentPCB);
+		currentPCB = NULL;
+	}
 }
 
 int spechdl(){
+	tprint("spechdl\n");
 	// TODO: only one time for type
 	extern pcb_t *currentPCB;
 	unsigned int area;
@@ -78,16 +81,19 @@ int spechdl(){
 }
 
 void gettime(){
+	tprint("gettime\n");
 	
 }
 
 
 void waitclock(){
+	tprint("waitclock\n");
 	extern pcb_t *currentPCB;
 	SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
 }
 
 unsigned int iodevop(){
+	tprint("iodevop\n");
 	extern pcb_t *currentPCB;
 	currentPCB->p_s.a3 = currentPCB->p_s.a2;
 	SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
@@ -95,6 +101,7 @@ unsigned int iodevop(){
 }
 
 void getpids(){
+	tprint("getpids\n");
 	extern pcb_t *currentPCB;
 	if (currentPCB->p_s.a2 != (unsigned int)NULL) return (void)currentPCB->p_s.a2;
 	else if (currentPCB->p_s.a3 != (unsigned int)NULL) return (void)currentPCB->p_s.a3;

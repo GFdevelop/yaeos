@@ -34,7 +34,7 @@ void sysbkHandler(){
 	
 	state_t *old = (state_t *)SYSBK_OLDAREA;
 	if (currentPCB) {
-		old->pc -= WORD_SIZE;
+		old->pc -= 2*WORD_SIZE;
 		SVST(old, &currentPCB->p_s);
 	}
 	
@@ -66,11 +66,13 @@ void sysbkHandler(){
 		case(GETPIDS):
 			getpids();
 			break;
+		default:
+			tprint("default");
 	}
 	
 	
 	tprint("end\n");
 	
-	insertProcQ(&readyQueue, currentPCB);
+	if (currentPCB) insertProcQ(&readyQueue, currentPCB);
 	scheduler();
 }
