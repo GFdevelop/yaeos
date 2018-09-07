@@ -1,10 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#define PRIO_IDLE 0 
-#define PRIO_LOW 1
-#define PRIO_NORM 2
-#define PRIO_HIGH 3
+#include "pcb.h"
 
 #define TIME_SLICE 3000
 #define AGING_TIME 10000
@@ -12,5 +9,6 @@
 
 void scheduler();
 unsigned int nextSlice();
+void ager(pcb_t *, void *);
 
 #endif
