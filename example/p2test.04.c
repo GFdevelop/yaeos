@@ -232,7 +232,7 @@ void p4b(void) {
 	//~ print("error - p4b still executing\n");
 	//~ PANIC();
 	if (SYSCALL(SPECHDL, SPECPGMT, (int)&p4pgm_old, (int)&p4pgm_new) != -1) {
-		print("error - p4b ran SPECHDL twice for SPECPGMT);
+		print("error - p4b ran SPECHDL twice for SPECPGMT");
 		PANIC();
 	}
 	SYSCALL(TERMINATEPROCESS, 0, 0, 0);

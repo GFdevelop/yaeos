@@ -52,8 +52,7 @@
 //~ } state_t;
 
 
-pcb_t *readyQueue[PRIO_HIGH+1];
-pcb_t *currentPCB;
+pcb_t *readyQueue, *currentPCB;
 int processCount, softBlockCount;
 semd_t *io;
 
@@ -80,24 +79,24 @@ int main() {
 	initASL();
 	
 	tprint("init variables\n");
-	for (int i=PRIO_IDLE; i<=PRIO_HIGH; i++) readyQueue[i] = NULL;
+	readyQueue = NULL;
 	currentPCB = NULL;
-	processCount = 0;
+	processCount = 1;
 	softBlockCount = 0;
 	
 	tprint("init semaphores\n");
 	io = NULL;
 	
 	tprint("create first pcb\n");
-	pcb_t *mainPCB = allocPcb();
-	mainPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(mainPCB->p_s.cpsr);
-	mainPCB->p_priority = PRIO_IDLE;
-	mainPCB->p_s.CP15_Control = CP15_CONTROL_NULL;
-	mainPCB->p_s.cpsr = STATUS_SYS_MODE;
-	mainPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
-	mainPCB->p_s.pc = (memaddr)test;
-	//mainPCB->p_s.cpsr = STATUS_ENABLE_TIMER(mainPCB->p_s.cpsr);
-	insertProcQ(&readyQueue[PRIO_IDLE], mainPCB);
+	currentPCB = allocPcb();
+	currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr);
+	currentPCB->p_priority = 0;
+	currentPCB->p_s.CP15_Control = CP15_CONTROL_NULL;
+	currentPCB->p_s.cpsr = STATUS_SYS_MODE;
+	currentPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
+	currentPCB->p_s.pc = (memaddr)test;
+	//currentPCB->p_s.cpsr = STATUS_ENABLE_TIMER(currentPCB->p_s.cpsr);
+	insertProcQ(&readyQueue, currentPCB);
 	
 	tprint("call scheduler\n");
 	scheduler();
