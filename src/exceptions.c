@@ -108,13 +108,22 @@ int terminateprocess(){
 
 void semv(){
 	extern pcb_t *currentProcess;
+	int * cast = (int *)currentProcess->p_s.a2;
+	*cast+=1;
 	removeBlocked((int *)currentProcess->p_s.a2);
 }
 
 void semp(){
-	tprint("semp\n");
+	//tprint("semp\n");
 	extern pcb_t *currentProcess;
-	insertBlocked((int *)currentProcess->p_s.a2, (pcb_t *)currentProcess->p_s.a2);
+	if((int *)currentProcess->p_s.a2 > 0){
+		int * cast = (int *)currentProcess->p_s.a2;
+		*cast-=1;
+		insertBlocked((int *)currentProcess->p_s.a2, (pcb_t *)currentProcess->p_s.a2);
+	}else {
+		currentProcess->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentProcess->p_s.cpsr);
+		WAIT();
+	}
 }
 
 int spechdl(){
