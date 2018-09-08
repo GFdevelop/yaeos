@@ -52,6 +52,11 @@ Mkfile.old
 dkms.conf
 
 p1test
+p2test
+p2test.04
 
 yaeos-GFdevelop/
 uARM/
+
+#Mac
+.DS_Store
