@@ -8,12 +8,12 @@ p%test:
 	$(MAKE) -C example $@
 	mkdir -p bin
 # copy p%test in bin/ only if date of file is newer
-	cp -u example/$@ bin/
+	#cp -u example/$@ bin/
 
 static $(LIBS):
 	$(MAKE) -C src $@
 	mkdir -p lib
-	cp -u src/*.a lib/
+	#cp -u src/*.a lib/
 
 source:
 	tar --exclude=*.tar.gz \

@@ -53,3 +53,7 @@ dkms.conf
 
 p1test
 p2test
+p2test.04
+
+#Mac
+.DS_Store
