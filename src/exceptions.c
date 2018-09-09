@@ -2,15 +2,21 @@
 
 #include "pcb.h"
 #include "asl.h"
+#include "scheduler.h"
+#include "interrupts.h"
 
 #include <uARMtypes.h>
 #include <libuarm.h>
 
+extern pcb_t*currentProcess;
+
 void TLB_handler(){
+	tprint("TLB\n");
 	return;
 }
 
 void PGMT_handler(){
+	tprint("PGMT\n");
 	return;
 }
 
@@ -30,9 +36,19 @@ void SYSCALL(WAITCHLD);
 //TODO: Syscalls ok, but brakpoint?
 void SYSBK_handler(){
 
+	unsigned int a1, a2, a3, a4;
+
 	state_t *SYSBK_Old = (state_t *) SYSBK_OLDAREA;
+	if(currentProcess){
+		a1 = SYSBK_Old->a1;
+		a2 = SYSBK_Old->a2;
+		a3 = SYSBK_Old->a3;
+		a4 = SYSBK_Old->a4;
+		SYSBK_Old->pc -= 4;
+		SVST(SYSBK_Old, &currentProcess->p_s);
+	}
 	
-	switch(SYSBK_Old->a1){
+	switch(a1){
 		case CREATEPROCESS:
 			tprint("CREATEPROCESS\n");
 			createprocess();
@@ -43,7 +59,7 @@ void SYSBK_handler(){
 			break;
 		case SEMP:
 			tprint("SEMP\n");
-			semp();
+			semp(&a2);
 			break;
 		case SEMV:
 			tprint("SEMV\n");
@@ -78,7 +94,7 @@ void SYSBK_handler(){
 			break;
 	}
 
-	//scheduler();
+	scheduler();
 	return;
 }
 
@@ -107,23 +123,30 @@ int terminateprocess(){
 }
 
 void semv(){
-	extern pcb_t *currentProcess;
-	int * cast = (int *)currentProcess->p_s.a2;
-	*cast+=1;
-	removeBlocked((int *)currentProcess->p_s.a2);
+	tprint("semv\n");
+	extern pcb_t *currentProcess, *readyQueue;
+	insertProcQ(&readyQueue,removeBlocked((int *)currentProcess->p_s.a2));
+	unsigned int value = currentProcess->p_s.a2;
+	value++;
 }
+ 
+void semp(unsigned int *semaddr){
+	tprint("semp\n");
+	extern pcb_t *currentProcess, *readyQueue;
+	extern unsigned int softBlock;
+	pcb_t *tmp = currentProcess;
 
-void semp(){
-	//tprint("semp\n");
-	extern pcb_t *currentProcess;
-	if((int *)currentProcess->p_s.a2 > 0){
-		int * cast = (int *)currentProcess->p_s.a2;
-		*cast-=1;
-		insertBlocked((int *)currentProcess->p_s.a2, (pcb_t *)currentProcess->p_s.a2);
-	}else {
-		currentProcess->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentProcess->p_s.cpsr);
+	if (*semaddr == 0) {
+		//tmp->p_s.cpsr = STATUS_ENABLE_TIMER(tmp->p_s.cpsr);
+		tprint("Here");
 		WAIT();
 	}
+	*semaddr -= 1;
+	outProcQ(&readyQueue,tmp);
+	//currentPCB = NULL;
+	softBlock += 1;
+	insertBlocked((int *)tmp->p_s.a2, (pcb_t *)tmp->p_s.a2);
+	tprint("Allora");
 }
 
 int spechdl(){

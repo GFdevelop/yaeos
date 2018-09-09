@@ -11,7 +11,7 @@
 
 extern state_t *INT_Old;
 extern pcb_t *currentProcess, *readyQueue;
-extern unsigned int softBlock, kernelStart, *sem_devices[NDEVICES];
+extern unsigned int softBlock, kernelStart;
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 void INT_handler(){
 
@@ -19,7 +19,7 @@ void INT_handler(){
 	INT_Old = (state_t *) INT_OLDAREA;
 	if(currentProcess){
 		INT_Old->pc = INT_Old->pc - 4;
-		SVST(&currentProcess->p_s, INT_Old);
+		SVST(INT_Old, &currentProcess->p_s);
 	}
 
 	unsigned int cause = getCAUSE();
@@ -95,14 +95,12 @@ void terminal_HDL(){
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
 	
-	if((term->recv_status & 0x0F) == DEV_TTRS_S_CHARTRSM){
-		sendACK();
-	}else if((term->transm_status & 0x0F) == DEV_TRCV_S_CHARRECV){
-		// TODO: Fix semaphore
-		sendACK();
+	if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		term->transm_command = DEV_C_ACK;
+	}else if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		term->recv_command = DEV_C_ACK;
 	}
 	
-	//insertProcQ(&readyQueues[currentProcess->p_priority], currentProcess);
 
 }
 
@@ -129,8 +127,4 @@ void SVST(state_t *A, state_t *B){
 	B->CP15_Cause = A->CP15_Cause;
 	B->TOD_Hi = A->TOD_Hi;
 	B->TOD_Low = A->TOD_Low;
-}
-
-void sendACK(){
-	
 }
