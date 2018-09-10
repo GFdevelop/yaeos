@@ -7,7 +7,8 @@
 #define PRIO_NORM	2
 #define PRIO_HIGH	3
 
-#define NDEVICES (DEV_PER_INT * (DEV_USED_INTS + 1))
+#define LINENO(addr)	(((addr - DEV_REG_START) / DEV_REGBLOCK_SIZE ) - 1 + DEV_IL_START)
+
 
 typedef unsigned int memaddr;
 typedef unsigned int cpu_t;

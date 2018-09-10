@@ -18,15 +18,15 @@
 #include "initial.h"
 #include "interrupts.h"
 #include "scheduler.h"
+#include "syscall.h"
 
 void intHandler(){
-	//tprint("intHandler\n");
-	extern pcb_t *readyQueue, *currentPCB;
+	//~ tprint("intHandler\n");
+	extern pcb_t *currentPCB;
 	
-	state_t *old = (state_t *)INT_OLDAREA;
 	if (currentPCB) {
-		old->pc -= WORD_SIZE;
-		SVST(old, &currentPCB->p_s);
+		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
+		//~ SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
 	}
 	
 	if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TIMER)){
@@ -48,34 +48,56 @@ void intHandler(){
 		tprint("Printer interrupt\n");
 		device_HDL(INT_PRINTER);
 	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TERMINAL)){
-		//tprint("Terminal interrupt\n");
+		//~ tprint("Terminal interrupt\n");
 		terminal_HDL();
 	}else{
 		tprint("Interrupt not recognized!\n");
 		PANIC();
 	}
 	
-	insertProcQ(&readyQueue, currentPCB);
-	scheduler();
+	//~ tprint("end\n");
+	//~ scheduler();
+	LDST((state_t *)INT_OLDAREA);
 }
 
 void timer_HDL(){
-	
+	tprint("timer_HDL\n");
 }
 
 void device_HDL(){
-
+	tprint("device_HDL\n");
 }
 
 void terminal_HDL(){
-	//tprint ("terminal_HDL\n");
+	//~ tprint ("terminal_HDL\n");
 	termreg_t *term;
+	unsigned int terminal_no = 0;
+	extern pcb_t *currentPCB;
+	extern int semDev[MAX_DEVICES];
+
+	terminal_no = findLineNo(INT_TERMINAL);
+	
+	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
+	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+	
+	if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		term->recv_command = DEV_C_ACK;
+		//~ ((state_t *)INT_OLDAREA)->a1 = term->recv_status;
+	}else if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		currentPCB->p_s.a1 = term->transm_status;
+		term->transm_command = DEV_C_ACK;
+	}
+	
+	if (semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no] < 1)
+		semv((unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no]);
+}
+
+unsigned int findLineNo(unsigned int device){
 	memaddr *line;
 	unsigned int terminal_no = 0;
-
-
+	
 	//1. Determinare quale dei teminali ha generato l'interrupt
-	line = (memaddr *)IDEV_BITMAP_ADDR(INT_TERMINAL);
+	line = (memaddr *)IDEV_BITMAP_ADDR(device);
 	while(*line > 0){
 		if(*line & 1) break;
 		else{
@@ -83,15 +105,7 @@ void terminal_HDL(){
 			*line = *line >> 1;
 		}	
 	}
-	
-	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
-	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
-	
-	if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		term->recv_command = DEV_C_ACK;
-	}else if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		term->transm_command = DEV_C_ACK;
-	}
+	return terminal_no;
 }
 
 void SVST(state_t *A, state_t *B){

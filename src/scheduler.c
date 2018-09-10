@@ -16,24 +16,29 @@
 #include "syscall.h"
 #include "scheduler.h"
 
+void debugger(){};
+
 
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern int processCount, softBlockCount;
 	
 	if (processCount){
-		if (readyQueue != NULL) {
-			currentPCB = removeProcQ(&readyQueue);
-			LDST(&currentPCB->p_s);
+		if (currentPCB == NULL) {
+			if (readyQueue != NULL) {
+				currentPCB = removeProcQ(&readyQueue);
+			}
+			else {
+				if (softBlockCount) {tprint("wait scheduler\n"); WAIT();}
+				else PANIC();
+			}
 		}
-		else {
-			if (softBlockCount) WAIT();
-			else PANIC();
-		}
+		LDST(&currentPCB->p_s);
+		
 		//SYSCALL(SEMV, (unsigned int)readyQueue[turn], 0, 0);
 		//setTIMER(100000UL);
 		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 		//tprint("test\n");
 	}
-	else HALT();
+	HALT();
 }
