@@ -36,7 +36,10 @@ void scheduler(){
 				if(!softBlock){
 					tprint("System is deadlocked, sir. PANIC!\n");
 					PANIC();
-				}else WAIT();
+				}else{
+					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+					WAIT();
+				}
 			}
 		}
 	//3. Ci troviamo in questo caso se un processo viene interrotto durante la sua esecuzione

@@ -23,7 +23,7 @@ void PGMT_handler();
 int createprocess();
 int terminateprocess();
 void semv();
-void semp(unsigned int *semaddr);
+void semp();
 int spechdl();
 void gettime();
 void waitclock();

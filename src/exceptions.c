@@ -4,11 +4,29 @@
 #include "asl.h"
 #include "scheduler.h"
 #include "interrupts.h"
+#include "initial.h"
 
+#include <arch.h>
 #include <uARMtypes.h>
 #include <libuarm.h>
 
 extern pcb_t*currentProcess;
+
+void printint_(int a){
+    int b = a%10;
+    a = a/10;
+    if (a>0) printint_(a);
+    if (b==0) {tprint("0");} else if (b==1) {tprint("1");}
+    else if (b==2) {tprint("2");} else if (b==3) {tprint("3");}
+    else if (b==4) {tprint("4");} else if (b==5) {tprint("5");}
+    else if (b==6) {tprint("6");} else if (b==7) {tprint("7");}
+    else if (b==8) {tprint("8");} else if (b==9) {tprint("9");}
+}
+void printint(int a){
+    if (a<0) {tprint("-"); a = -a;}
+    printint_(a);
+    tprint("\n");
+}
 
 void TLB_handler(){
 	tprint("TLB\n");
@@ -36,19 +54,13 @@ void SYSCALL(WAITCHLD);
 //TODO: Syscalls ok, but brakpoint?
 void SYSBK_handler(){
 
-	unsigned int a1, a2, a3, a4;
-
 	state_t *SYSBK_Old = (state_t *) SYSBK_OLDAREA;
 	if(currentProcess){
-		a1 = SYSBK_Old->a1;
-		a2 = SYSBK_Old->a2;
-		a3 = SYSBK_Old->a3;
-		a4 = SYSBK_Old->a4;
-		SYSBK_Old->pc -= 4;
+		//SYSBK_Old->pc = SYSBK_Old->pc - 4;
 		SVST(SYSBK_Old, &currentProcess->p_s);
 	}
 	
-	switch(a1){
+	switch(SYSBK_Old->a1){
 		case CREATEPROCESS:
 			tprint("CREATEPROCESS\n");
 			createprocess();
@@ -58,11 +70,11 @@ void SYSBK_handler(){
 			terminateprocess();
 			break;
 		case SEMP:
-			tprint("SEMP\n");
-			semp(&a2);
+			//tprint("SEMP\n");
+			semp();
 			break;
 		case SEMV:
-			tprint("SEMV\n");
+			//tprint("SEMV\n");
 			semv();
 			break;
 		case SPECHDL:
@@ -94,6 +106,7 @@ void SYSBK_handler(){
 			break;
 	}
 
+	//tprint("Allora\n");
 	scheduler();
 	return;
 }
@@ -123,30 +136,35 @@ int terminateprocess(){
 }
 
 void semv(){
-	tprint("semv\n");
-	extern pcb_t *currentProcess, *readyQueue;
-	insertProcQ(&readyQueue,removeBlocked((int *)currentProcess->p_s.a2));
-	unsigned int value = currentProcess->p_s.a2;
-	value++;
+    //tprint("semv\n");
+    extern pcb_t *currentProcess, *readyQueue;
+    extern unsigned int softBlock;
+    pcb_t *tmp;
+    //state_t *old = (state_t*)SYSBK_OLDAREA;
+    int *value = (int *)currentProcess->p_s.a2;
+    if (headBlocked(value)) {
+        softBlock--;
+        tmp = removeBlocked(value);
+        insertProcQ(&readyQueue, tmp);
+    }
+    *value += 1;
 }
  
-void semp(unsigned int *semaddr){
-	tprint("semp\n");
-	extern pcb_t *currentProcess, *readyQueue;
-	extern unsigned int softBlock;
-	pcb_t *tmp = currentProcess;
-
-	if (*semaddr == 0) {
-		//tmp->p_s.cpsr = STATUS_ENABLE_TIMER(tmp->p_s.cpsr);
-		tprint("Here");
-		WAIT();
-	}
-	*semaddr -= 1;
-	outProcQ(&readyQueue,tmp);
-	//currentPCB = NULL;
-	softBlock += 1;
-	insertBlocked((int *)tmp->p_s.a2, (pcb_t *)tmp->p_s.a2);
-	tprint("Allora");
+void semp(){
+	//tprint("Init");
+    extern pcb_t *currentProcess, *readyQueue;
+    extern unsigned int softBlock;
+    int *value = (int *)currentProcess->p_s.a2;
+    //printint((unsigned int)value);
+    if ((*value) <= 0){
+    	//tprint("Entra\n");
+        insertBlocked(value, currentProcess);
+        softBlock += 1;
+        currentProcess = NULL;
+    }else{
+    	//tprint("Non entra\n");
+    	*value -= 1;
+    }
 }
 
 int spechdl(){
@@ -173,9 +191,31 @@ void waitclock(){
 
 unsigned int iodevop(){
 	extern pcb_t *currentProcess;
-	currentProcess->p_s.a3 = currentProcess->p_s.a2;
-	SYSCALL(SEMP, (unsigned int)currentProcess, 0, 0);
-	return 0;
+	extern int sem_devices[MAX_DEVICES];
+	unsigned int subdev_no, device = currentProcess->p_s.a3;
+	unsigned int command = currentProcess->p_s.a2;
+	
+	termreg_t *term = (termreg_t *) (device - 2*WS);
+	//printint((unsigned int)term);
+	subdev_no = instanceNo(LINE_NO(device - 2*WS));
+	currentProcess->p_s.a2 = (unsigned int)&sem_devices[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
+	
+	semp();
+/*
+	if((currentProcess->p_s.a2 & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
+	}else if((currentProcess->p_s.a2 & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+	}
+*/
+	//WAIT();
+	term->transm_command = command;
+	//printint(term->transm_status);
+	//WAIT();
+	return term->transm_status;
+	//~ }
+	//~ semv((unsigned int)&semDev[((int)a3)/2%MAX_DEVICES]);
+	//~ ((state_t*)SYSBK_OLDAREA)->a1 = term->transm_status;
 }
 
 void getpids(){
