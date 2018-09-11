@@ -366,7 +366,7 @@ void test(void) {
 	p7state.sp = get_stack_area();
 	p7state.pc = (memaddr) p7;
 
-	print("test started\n");
+	print("Test started\n");
 	SYSCALL(CREATEPROCESS, (memaddr)&p1state, 10, (memaddr)&p1addr);
 
 	SYSCALL(GETPIDS, (memaddr)&p0addr, (memaddr)&p0paddr, 0);
