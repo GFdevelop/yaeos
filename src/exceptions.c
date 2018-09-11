@@ -90,7 +90,7 @@ void SYSBK_handler(){
 			waitclock();
 			break;
 		case IODEVOP:
-			tprint("IODEVOP\n");
+			//tprint("IODEVOP\n");
 			iodevop();
 			break;
 		case GETPIDS:
@@ -136,13 +136,12 @@ int terminateprocess(){
 }
 
 void semv(){
-    //tprint("semv\n");
     extern pcb_t *currentProcess, *readyQueue;
     extern unsigned int softBlock;
     pcb_t *tmp;
-    //state_t *old = (state_t*)SYSBK_OLDAREA;
     int *value = (int *)currentProcess->p_s.a2;
     if (headBlocked(value)) {
+    	//tprint("Sblocca\n");
         softBlock--;
         tmp = removeBlocked(value);
         insertProcQ(&readyQueue, tmp);
@@ -151,20 +150,17 @@ void semv(){
 }
  
 void semp(){
-	//tprint("Init");
     extern pcb_t *currentProcess, *readyQueue;
     extern unsigned int softBlock;
+    extern int sem_devices[MAX_DEVICES];
+
     int *value = (int *)currentProcess->p_s.a2;
-    //printint((unsigned int)value);
-    if ((*value) <= 0){
-    	//tprint("Entra\n");
+    if (((*value) <= 0) || ((value >= sem_devices) && (value <= &sem_devices[MAX_DEVICES - 1]))){
+        //tprint("Entra\n");
         insertBlocked(value, currentProcess);
         softBlock += 1;
         currentProcess = NULL;
-    }else{
-    	//tprint("Non entra\n");
-    	*value -= 1;
-    }
+    }else *value -= 1;
 }
 
 int spechdl(){
@@ -196,26 +192,20 @@ unsigned int iodevop(){
 	unsigned int command = currentProcess->p_s.a2;
 	
 	termreg_t *term = (termreg_t *) (device - 2*WS);
-	//printint((unsigned int)term);
 	subdev_no = instanceNo(LINE_NO(device - 2*WS));
 	currentProcess->p_s.a2 = (unsigned int)&sem_devices[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
 	
 	semp();
-/*
-	if((currentProcess->p_s.a2 & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
-	}else if((currentProcess->p_s.a2 & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
-	}
-*/
-	//WAIT();
+
 	term->transm_command = command;
-	//printint(term->transm_status);
-	//WAIT();
+	/*
+	if(sem_devices[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no]) semp();
+	else{
+		term->transm_command = command;
+		LDST(&currentProcess->p_s);
+	}
+	*/
 	return term->transm_status;
-	//~ }
-	//~ semv((unsigned int)&semDev[((int)a3)/2%MAX_DEVICES]);
-	//~ ((state_t*)SYSBK_OLDAREA)->a1 = term->transm_status;
 }
 
 void getpids(){
