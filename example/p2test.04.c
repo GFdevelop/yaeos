@@ -48,6 +48,7 @@ void print(char *msg) {
 	while (*msg != '\0') {
 		unsigned int command = DEV_TTRS_C_TRSMCHAR | (*msg << BYTELEN);
 		status = SYSCALL(IODEVOP, command, DEV_REG_ADDR(IL_TERMINAL, 0) + 2 * WS, 0);
+		//if ((status & DEV_TERM_STATUS) != 3) HALT();
 		if ((status & DEV_TERM_STATUS) != DEV_TTRS_S_CHARTRSM)
 			PANIC();
 		if ((status >> BYTELEN) != *msg)
