@@ -14,7 +14,7 @@
 
 pcb_t *readyQueue, *currentProcess;
 unsigned int processCount, softBlock;
-unsigned int *sem_devices[NDEVICES], *sem_pseudoclock;
+unsigned int sem_devices[MAX_DEVICES], sem_pseudoclock;
 
 unsigned int aging_elapsed = 0;
 unsigned int aging_times = 0;
@@ -67,13 +67,12 @@ int main(int argc, char const *argv[]){
 	readyQueue = NULL;
 
 	//4. Nucleus' semaphores init
-	for(i = 0; i < NDEVICES; i++) sem_devices[i] = 0;
-	sem_pseudoclock = 0;
+	for(i = 0; i < MAX_DEVICES; i++) sem_devices[i] = 1;
 
 	//5. First process' PCB
 	pcb_t *first = allocPcb();
 	first->p_s.cpsr = STATUS_ALL_INT_ENABLE(first->p_s.cpsr);
-	first->p_priority = 2;
+	first->p_priority = 0;
 	first->p_s.CP15_Control = CP15_CONTROL_NULL;
 	first->p_s.cpsr = STATUS_SYS_MODE;
 	first->p_s.sp = RAM_TOP - FRAMESIZE;
@@ -90,8 +89,7 @@ void newArea(unsigned int address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;
-	area->cpsr = STATUS_SYS_MODE;
+	area->cpsr = STATUS_NULL | STATUS_SYS_MODE;
 	area->cpsr = STATUS_ALL_INT_DISABLE(area->cpsr);
-	area->cpsr = STATUS_ENABLE_TIMER(area->cpsr);
 	area->CP15_Control = CP15_CONTROL_NULL;
 }

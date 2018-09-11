@@ -1,6 +1,7 @@
 #include "interrupts.h"
 
 #include "pcb.h"
+#include "asl.h"
 #include "scheduler.h"
 #include "initial.h"
 #include "exceptions.h"
@@ -11,7 +12,7 @@
 
 extern state_t *INT_Old;
 extern pcb_t *currentProcess, *readyQueue;
-extern unsigned int softBlock, kernelStart, *sem_devices[NDEVICES];
+extern unsigned int softBlock, kernelStart;
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 void INT_handler(){
 
@@ -19,13 +20,13 @@ void INT_handler(){
 	INT_Old = (state_t *) INT_OLDAREA;
 	if(currentProcess){
 		INT_Old->pc = INT_Old->pc - 4;
-		SVST(&currentProcess->p_s, INT_Old);
+		SVST(INT_Old, &currentProcess->p_s);
 	}
 
 	unsigned int cause = getCAUSE();
 
 	if(CAUSE_IP_GET(cause, INT_TIMER)){
-		tprint("Timer interruptsupt\n");
+		tprint("Timer interrupt\n");
 		timer_HDL();
 	}else if(CAUSE_IP_GET(cause, INT_LOWEST)){
 		tprint("Lowest interrupt\n");
@@ -43,7 +44,7 @@ void INT_handler(){
 		tprint("Printer interrupt\n");
 		device_HDL(INT_PRINTER);
 	}else if(CAUSE_IP_GET(cause, INT_TERMINAL)){
-		tprint("Terminal interrupt\n");
+		//tprint("Terminal interrupt\n");
 		terminal_HDL();
 	}else{
 		tprint("Interrupt not recognized!\n");
@@ -78,34 +79,24 @@ void device_HDL(unsigned int device){
 void terminal_HDL(){
 
 	termreg_t *term;
-	memaddr *line;
-	unsigned int terminal_no = 0;
+	unsigned int terminal_no;
 
+	//1. Determinare quale dei teminali ha generato l'interrupt	
+	terminal_no = instanceNo(INT_TERMINAL);
 
-	//1. Determinare quale dei teminali ha generato l'interrupt
-	line = (memaddr *)IDEV_BITMAP_ADDR(INT_TERMINAL);
-	while(*line > 0){
-		if(*line & 1) break;
-		else{
-			terminal_no++;
-			*line = *line >> 1;
-		}	
-	}
-	
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
 	
-	if((term->recv_status & 0x0F) == DEV_TTRS_S_CHARTRSM){
-		sendACK();
-	}else if((term->transm_status & 0x0F) == DEV_TRCV_S_CHARRECV){
-		// TODO: Fix semaphore
-		sendACK();
+	//3. Mandare l'ACK corrispondente
+	if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
+	}else if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
 	}
-	
-	//insertProcQ(&readyQueues[currentProcess->p_priority], currentProcess);
 
 }
 
+//Necessaria per salvare lo stato del processo dalle aree *_OLD evitando 'undefined reference to memcpy'
 void SVST(state_t *A, state_t *B){
 	B->a1 = A->a1;
 	B->a2 = A->a2;
@@ -131,6 +122,39 @@ void SVST(state_t *A, state_t *B){
 	B->TOD_Low = A->TOD_Low;
 }
 
-void sendACK(){
-	
+//Partendo dal device, analizza la bitmap per capire quale sub-device ha un interrupt pendente.
+//I sub-device più in basso come numero, hanno priorità maggiore
+unsigned int instanceNo(int device){
+	unsigned int subdev_no = 0;
+
+	memaddr *line = (memaddr *)IDEV_BITMAP_ADDR(device);
+	while(*line > 0){
+		if(*line & 1) break;
+		else{
+			subdev_no++;
+			*line = *line >> 1;
+		}	
+	}
+
+	return subdev_no;
+}
+
+//Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
+void sendACK(termreg_t* device, int type, int index){
+	extern int sem_devices[MAX_DEVICES];
+
+	pcb_t *firstBlocked = headBlocked(&sem_devices[index]);
+	//if(firstBlocked == NULL) WAIT();
+	switch (type) {
+		case TRANSM:
+			firstBlocked->p_s.a1 = device->transm_status;
+			device->transm_command = DEV_C_ACK;
+			break;
+		case RECV:
+			firstBlocked->p_s.a1 = device->recv_status;
+			device->recv_command = DEV_C_ACK;
+			break;
+	}
+	currentProcess->p_s.a2 = (unsigned int)&sem_devices[index];
+	semv();
 }

@@ -36,7 +36,10 @@ void scheduler(){
 				if(!softBlock){
 					tprint("System is deadlocked, sir. PANIC!\n");
 					PANIC();
-				}else WAIT();
+				}else{
+					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+					WAIT();
+				}
 			}
 		}
 	//3. Ci troviamo in questo caso se un processo viene interrotto durante la sua esecuzione
@@ -47,7 +50,6 @@ void scheduler(){
 		//Il nuovo valore del timer sarà il tempo rimanente
 		slice = TIME_SLICE - (kernelStart - curProc_start);
 	}
-	//tprint("Here2");
 	setTIMER(slice);	//Setto effettivamente il prossimo timer
 	curProc_start = getTODLO();	
 	LDST(&currentProcess->p_s);	//Ricomincia la festa!
@@ -60,7 +62,6 @@ unsigned int nextSlice(){
 
 	aging_elapsed += (getTODLO() - curProc_start);
 	slice = MIN(TIME_SLICE, (AGING_TIME - aging_elapsed));
-	if(slice <= 0) tprint("Eccolo\n");
 	if(slice < TIME_SLICE) isAging = 1;
 	return slice;
 }

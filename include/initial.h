@@ -1,7 +1,7 @@
 #ifndef INITIAL_H
 #define INITIAL_H
 
-#define NDEVICES (DEV_PER_INT * (DEV_USED_INTS + 1))
+#define LINE_NO(addr) (((addr - DEV_REG_START) / DEV_REGBLOCK_SIZE ) - 1 + DEV_IL_START)
 
 typedef unsigned int memaddr;
 typedef unsigned int cpu_t;
