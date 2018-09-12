@@ -14,7 +14,6 @@ void scheduler(){
 	//4. AGING: di norma slice = TIME_SLICE ma, se il tempo mancante per l'aging < TIME_SLICE
 	//il prossimo timer viene settato a questa quantità e l'interrupt deve essere interpretato in tal senso 
 	if(isAging){
-		//tprint("*\n");
 		isAging = 0;
 		aging_elapsed = 0;	
 		
@@ -26,7 +25,7 @@ void scheduler(){
 	//
 	if(currentProcess == NULL){	
 		if(headProcQ(readyQueue) != NULL){
-			slice = nextSlice();//TIME_SLICE;//;	//Selezioniamo la durata del nuovo timer
+			slice = nextSlice();	//Selezioniamo la durata del nuovo timer
 			currentProcess = removeProcQ(&readyQueue);	//rimuoviamo il prcesso dalla coda, se tutto va bene sarà rimesso in coda poi
 		}else{
 			if(!processCount){
@@ -38,6 +37,7 @@ void scheduler(){
 					PANIC();
 				}else{
 					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+					tprint("System is waiting!\n");
 					WAIT();
 				}
 			}

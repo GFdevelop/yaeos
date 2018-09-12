@@ -14,7 +14,7 @@
 
 pcb_t *readyQueue, *currentProcess;
 unsigned int processCount, softBlock;
-unsigned int sem_devices[MAX_DEVICES], sem_pseudoclock;
+unsigned int sem_devices[MAX_DEVICES], sem_termination;
 
 unsigned int aging_elapsed = 0;
 unsigned int aging_times = 0;
@@ -68,6 +68,7 @@ int main(int argc, char const *argv[]){
 
 	//4. Nucleus' semaphores init
 	for(i = 0; i < MAX_DEVICES; i++) sem_devices[i] = 1;
+	sem_termination = 0;
 
 	//5. First process' PCB
 	pcb_t *first = allocPcb();
