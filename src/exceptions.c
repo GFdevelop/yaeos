@@ -62,11 +62,11 @@ void SYSBK_handler(){
 	
 	switch(SYSBK_Old->a1){
 		case CREATEPROCESS:
-			tprint("CREATEPROCESS\n");
+			//tprint("CREATEPROCESS\n");
 			createprocess();
 			break;
 		case TERMINATEPROCESS:
-			tprint("TERMINATEPROCESS\n");
+			//tprint("TERMINATEPROCESS\n");
 			terminateprocess();
 			break;
 		case SEMP:
@@ -94,11 +94,11 @@ void SYSBK_handler(){
 			iodevop();
 			break;
 		case GETPIDS:
-			tprint("GETPIDS\n");
+			//ètprint("GETPIDS\n");
 			getpids();
 			break;
 		case WAITCHLD:
-			tprint("WAITCHLD\n");
+			//tprint("WAITCHLD\n");
 			waitchld();
 			break;
 		default:
@@ -106,33 +106,35 @@ void SYSBK_handler(){
 			break;
 	}
 
-	//tprint("Allora\n");
 	scheduler();
 	return;
 }
 
 // --- GFdelevop's code ---
 
+
 int createprocess(){
-	extern pcb_t *currentProcess;
-	pcb_t *childPCB = allocPcb();
-	if (childPCB == NULL) return -1;
-	else {
-		insertChild(currentProcess, childPCB);
-		STST(&childPCB->p_s);
-		currentProcess->p_s.a4 = (unsigned int)childPCB;
+	extern pcb_t *currentProcess, *readyQueue;
+	extern unsigned int processCount;
+	//pcb_t *newPid = (pcb_t *)currentProcess->p_s.a4;
+
+	pcb_t *new = allocPcb();
+	if(new == NULL) return -1;
+	else{
+		processCount += 1;
+		SVST((state_t *)currentProcess->p_s.a2, &new->p_s);
+		new->p_priority = currentProcess->p_s.a3;
+		insertProcQ(&readyQueue, new);
+		insertChild(currentProcess, new);
+		*(memaddr *)&currentProcess->p_s.a4 = (memaddr **)new;
 		return 0;
 	}
 }
 
 int terminateprocess(){
-	extern pcb_t *currentProcess;
-	pcb_t *head;
-	if (currentProcess->p_s.a2 == (int)NULL) head = currentProcess;
-	else head = (pcb_t *)currentProcess->p_s.a2;
-	forallProcQ(head, (void *)removeProcQ, head->p_first_child);
-	removeProcQ(&head);
-	return 0;
+	extern pcb_t *currentProcess, *readyQueue;
+	extern unsigned int processCount, softBlock;
+	return 0;	
 }
 
 void semv(){
@@ -141,8 +143,7 @@ void semv(){
     pcb_t *tmp;
     int *value = (int *)currentProcess->p_s.a2;
     if (headBlocked(value)) {
-    	//tprint("Sblocca\n");
-        softBlock--;
+        softBlock -= 1;
         tmp = removeBlocked(value);
         insertProcQ(&readyQueue, tmp);
     }
@@ -156,7 +157,6 @@ void semp(){
 
     int *value = (int *)currentProcess->p_s.a2;
     if (((*value) <= 0) || ((value >= sem_devices) && (value <= &sem_devices[MAX_DEVICES - 1]))){
-        //tprint("Entra\n");
         insertBlocked(value, currentProcess);
         softBlock += 1;
         currentProcess = NULL;
@@ -181,8 +181,9 @@ void gettime(){
 }
 
 void waitclock(){
-	extern pcb_t *currentProcess;
-	SYSCALL(SEMP, (unsigned int)currentProcess, 0, 0);
+	extern int sem_devices[MAX_DEVICES];
+	currentProcess->p_s.a2 = (unsigned int)&sem_devices[CLOCK_SEM];
+	semp();
 }
 
 unsigned int iodevop(){
@@ -193,28 +194,28 @@ unsigned int iodevop(){
 	
 	termreg_t *term = (termreg_t *) (device - 2*WS);
 	subdev_no = instanceNo(LINE_NO(device - 2*WS));
+	//TODO: Differenziare lettori - scrittori
 	currentProcess->p_s.a2 = (unsigned int)&sem_devices[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
 	
 	semp();
 
 	term->transm_command = command;
-	/*
-	if(sem_devices[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no]) semp();
-	else{
-		term->transm_command = command;
-		LDST(&currentProcess->p_s);
-	}
-	*/
 	return term->transm_status;
 }
 
 void getpids(){
 	extern pcb_t *currentProcess;
-	if (currentProcess->p_s.a2 != (unsigned int)NULL) return (void)currentProcess->p_s.a2;
-	else if (currentProcess->p_s.a3 != (unsigned int)NULL) return (void)currentProcess->p_s.a3;
+	pcb_t *me = currentProcess, *papa = currentProcess->p_parent;
+	if(papa == NULL){
+		currentProcess->p_s.a2 = 0;
+		currentProcess->p_s.a3 = (unsigned int)NULL;
+	}else{
+		currentProcess->p_s.a2 = (unsigned int)me;
+		currentProcess->p_s.a3 = (unsigned int)papa;
+	}
 }
 
 //Added missing SYSCALL10
 void waitchld(){
-
+ 	
 }

@@ -26,7 +26,7 @@ void INT_handler(){
 	unsigned int cause = getCAUSE();
 
 	if(CAUSE_IP_GET(cause, INT_TIMER)){
-		//tprint("Timer interrupt\n");
+		tprint("Timer interrupt\n");
 		timer_HDL();
 	}else if(CAUSE_IP_GET(cause, INT_LOWEST)){
 		//tprint("Lowest interrupt\n");
@@ -144,7 +144,6 @@ void sendACK(termreg_t* device, int type, int index){
 	extern int sem_devices[MAX_DEVICES];
 
 	pcb_t *firstBlocked = headBlocked(&sem_devices[index]);
-	//if(firstBlocked == NULL) WAIT();
 	switch (type) {
 		case TRANSM:
 			firstBlocked->p_s.a1 = device->transm_status;

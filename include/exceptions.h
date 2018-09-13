@@ -1,6 +1,8 @@
 #ifndef EXCEPTIONS_H
 #define EXCEPTIONS_H
 
+#include "pcb.h"
+
 #define CREATEPROCESS 1
 #define TERMINATEPROCESS 2
 #define SEMP 3
