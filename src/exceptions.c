@@ -29,13 +29,12 @@ void pgmtrapHandler(){
 }
 
 void sysbkHandler(){
-	tprint("sysbkHandler\n");
-	setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
 	
 	//~ if (currentPCB) {
 		//~ ((state_t *)SYSBK_OLDAREA)->pc -= 2*WORD_SIZE;
-		//~ SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
+		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	//~ }
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
@@ -61,10 +60,14 @@ void sysbkHandler(){
 			waitclock();
 			break;
 		case(IODEVOP):
-			iodevop(((state_t *)SYSBK_OLDAREA)->a2,((state_t *)SYSBK_OLDAREA)->a3);
+			((state_t *)SYSBK_OLDAREA)->a1 = iodevop(((state_t *)SYSBK_OLDAREA)->a2,((state_t *)SYSBK_OLDAREA)->a3);
+			//~ ((state_t *)SYSBK_OLDAREA)->a1 = currentPCB->p_s.a1;
 			break;
 		case(GETPIDS):
 			getpids();
+			break;
+		case(WAITCHLD):
+			waitchild();
 			break;
 		default:
 			tprint("default\n");
@@ -74,7 +77,6 @@ void sysbkHandler(){
 	//~ tprint("end\n");
 	//~ if (currentPCB) insertProcQ(&readyQueue, currentPCB);
 	//~ else tprint("NULL exc\n");
-	//~ scheduler();
-	setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
-	LDST((state_t *)SYSBK_OLDAREA);
+	scheduler();
+	//~ LDST((state_t *)SYSBK_OLDAREA);
 }

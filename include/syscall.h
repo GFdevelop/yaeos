@@ -35,7 +35,8 @@ void semp(unsigned int a2);
 int spechdl();
 void gettime();
 void waitclock();
-void iodevop(unsigned int a2, unsigned int a3);
+unsigned int iodevop(unsigned int a2, unsigned int a3);
 void getpids();
+void waitchild();
 
 #endif

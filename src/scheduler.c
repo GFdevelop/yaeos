@@ -29,7 +29,11 @@ void scheduler(){
 				currentPCB = removeProcQ(&readyQueue);
 			}
 			else {
-				if (softBlockCount) {tprint("wait scheduler\n"); WAIT();}
+				if (softBlockCount) {
+					//~ tprint("wait scheduler\n");
+					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+					WAIT();
+				}
 				else PANIC();
 			}
 		}
@@ -40,5 +44,6 @@ void scheduler(){
 		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 		//tprint("test\n");
 	}
+	tprint("no process count\n");
 	HALT();
 }

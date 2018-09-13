@@ -21,12 +21,13 @@
 #include "syscall.h"
 
 void intHandler(){
+	//~ setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
 	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
 	
 	if (currentPCB) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
-		//~ SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
+		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
 	}
 	
 	if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TIMER)){
@@ -56,8 +57,8 @@ void intHandler(){
 	}
 	
 	//~ tprint("end\n");
-	//~ scheduler();
-	LDST((state_t *)INT_OLDAREA);
+	//~ if (currentPCB) LDST((state_t *)INT_OLDAREA);
+	scheduler();
 }
 
 void timer_HDL(){
@@ -81,11 +82,9 @@ void terminal_HDL(){
 	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
 	
 	if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		term->recv_command = DEV_C_ACK;
-		//~ ((state_t *)INT_OLDAREA)->a1 = term->recv_status;
+		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
 	}else if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		currentPCB->p_s.a1 = term->transm_status;
-		term->transm_command = DEV_C_ACK;
+		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
 	}
 	
 	if (semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no] < 1)
@@ -131,4 +130,24 @@ void SVST(state_t *A, state_t *B){
 	B->CP15_Cause = A->CP15_Cause;
 	B->TOD_Hi = A->TOD_Hi;
 	B->TOD_Low = A->TOD_Low;
+}
+
+//Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
+void sendACK(termreg_t* device, int type, int index){
+	extern int semDev[MAX_DEVICES];
+
+	pcb_t *firstBlocked = headBlocked(&semDev[index]);
+	//if(firstBlocked == NULL) WAIT();
+	switch (type) {
+		case TRANSM:
+			firstBlocked->p_s.a1 = device->transm_status;
+			device->transm_command = DEV_C_ACK;
+			break;
+		case RECV:
+			firstBlocked->p_s.a1 = device->recv_status;
+			device->recv_command = DEV_C_ACK;
+			break;
+	}
+	
+	semv(index);
 }

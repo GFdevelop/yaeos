@@ -69,26 +69,26 @@ void newArea(unsigned int address, void handler()){
 
 
 int main() {
-	tprint("init NEW area\n");
+	//~ tprint("init NEW area\n");
 	newArea(INT_NEWAREA,intHandler);
 	newArea(TLB_NEWAREA,tlbHandler);
 	newArea(PGMTRAP_NEWAREA,pgmtrapHandler);
 	newArea(SYSBK_NEWAREA,sysbkHandler);
 	
-	tprint("init pcb and asl\n");
+	//~ tprint("init pcb and asl\n");
 	initPcbs();
 	initASL();
 	
-	tprint("init variables\n");
+	//~ tprint("init variables\n");
 	readyQueue = NULL;
 	currentPCB = NULL;
 	processCount = 1;
 	softBlockCount = 0;
 	
-	tprint("init semaphores\n");
+	//~ tprint("init semaphores\n");
 	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=1;
 	
-	tprint("create first pcb\n");
+	//~ tprint("create first pcb\n");
 	currentPCB = allocPcb();
 	currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr);
 	currentPCB->p_priority = 0;
@@ -99,7 +99,7 @@ int main() {
 	//currentPCB->p_s.cpsr = STATUS_ENABLE_TIMER(currentPCB->p_s.cpsr);
 	insertProcQ(&readyQueue, currentPCB);
 	
-	tprint("call scheduler\n");
+	//~ tprint("call scheduler\n");
 	scheduler();
 	
 	return 0;
