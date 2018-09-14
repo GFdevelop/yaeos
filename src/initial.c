@@ -67,8 +67,8 @@ int main(int argc, char const *argv[]){
 	readyQueue = NULL;
 
 	//4. Nucleus' semaphores init
-	for(i = 0; i < MAX_DEVICES; i++) sem_devices[i] = 1;
-	sem_termination = 0;
+	for(i = 0; i < CLOCK_SEM; i++) sem_devices[i] = 1;
+	sem_devices[CLOCK_SEM] = 0;
 
 	//5. First process' PCB
 	pcb_t *first = allocPcb();

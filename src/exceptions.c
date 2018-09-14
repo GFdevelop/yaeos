@@ -110,31 +110,65 @@ void SYSBK_handler(){
 	return;
 }
 
-// --- GFdelevop's code ---
-
-
 int createprocess(){
 	extern pcb_t *currentProcess, *readyQueue;
 	extern unsigned int processCount;
-	//pcb_t *newPid = (pcb_t *)currentProcess->p_s.a4;
-
 	pcb_t *new = allocPcb();
-	if(new == NULL) return -1;
-	else{
-		processCount += 1;
-		SVST((state_t *)currentProcess->p_s.a2, &new->p_s);
+	if (new == NULL) return -1;
+	else {
+		SVST((state_t *)currentProcess->p_s.a2,&new->p_s);
 		new->p_priority = currentProcess->p_s.a3;
-		insertProcQ(&readyQueue, new);
 		insertChild(currentProcess, new);
-		*(memaddr *)&currentProcess->p_s.a4 = (memaddr **)new;
+		*(pcb_t **)currentProcess->p_s.a4 = new;
+		insertProcQ(&readyQueue,new);
+		processCount += 1;
 		return 0;
 	}
 }
 
 int terminateprocess(){
 	extern pcb_t *currentProcess, *readyQueue;
+	pcb_t *head, *tmp;
 	extern unsigned int processCount, softBlock;
-	return 0;	
+	
+	if ((pcb_t *)currentProcess->p_s.a2 == NULL) head = currentProcess;
+	else head = (pcb_t *)currentProcess->p_s.a2;
+	tmp = head;
+	while (tmp != NULL){	// TODO: all :)
+		if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
+		else {
+			if (tmp != head) {
+				tmp = tmp->p_parent;
+				removeChild(tmp);
+				if (headBlocked((int *)&(tmp->p_first_child))) {
+					freePcb(removeBlocked((int *)&(tmp->p_first_child)));
+					softBlock -= 1;
+				}
+				else if (tmp->p_first_child != currentProcess) freePcb(outProcQ(&readyQueue,tmp->p_first_child));
+				else freePcb(tmp->p_first_child);
+				processCount -= 1;
+			}
+			else tmp = NULL;
+		}
+	}
+	if (head != currentProcess) {	// currentProcess isn't blocked and isn't in readyQueue then we skip this
+		if (headBlocked(head->p_semKey)) {	// if head is blocked we don't remove it from readyQueue
+			outChildBlocked(head);
+			softBlock -= 1;
+		}
+		else outProcQ(&readyQueue,head);	// if head is not blocked remove it
+	}
+	
+	if (headBlocked((int *)head->p_parent)) {	// if parent of head is in WAITCHILD then we unlock it
+		removeBlocked((int *)head->p_parent);
+		softBlock -= 1;
+		insertProcQ(&readyQueue, head->p_parent);
+	}
+	
+	outChild(head);
+	freePcb(head);
+	processCount -= 1;
+	return 0;
 }
 
 void semv(){
@@ -147,7 +181,7 @@ void semv(){
         tmp = removeBlocked(value);
         insertProcQ(&readyQueue, tmp);
     }
-    *value += 1;
+    if(*value <= 1) *value += 1;
 }
  
 void semp(){
@@ -156,7 +190,7 @@ void semp(){
     extern int sem_devices[MAX_DEVICES];
 
     int *value = (int *)currentProcess->p_s.a2;
-    if (((*value) <= 0) || ((value >= sem_devices) && (value <= &sem_devices[MAX_DEVICES - 1]))){
+    if (((*value) <= 0) || ((value >= sem_devices) && (value <= &sem_devices[CLOCK_SEM]))){
         insertBlocked(value, currentProcess);
         softBlock += 1;
         currentProcess = NULL;
@@ -205,17 +239,27 @@ unsigned int iodevop(){
 
 void getpids(){
 	extern pcb_t *currentProcess;
-	pcb_t *me = currentProcess, *papa = currentProcess->p_parent;
-	if(papa == NULL){
-		currentProcess->p_s.a2 = 0;
-		currentProcess->p_s.a3 = (unsigned int)NULL;
-	}else{
-		currentProcess->p_s.a2 = (unsigned int)me;
-		currentProcess->p_s.a3 = (unsigned int)papa;
+	if (currentProcess->p_parent == NULL) {
+		//~ tprint("root\n");
+		if ((pcb_t **)currentProcess->p_s.a2 != NULL) *(pcb_t **)currentProcess->p_s.a2 = NULL;
+		if ((pcb_t **)currentProcess->p_s.a3 != NULL) *(pcb_t **)currentProcess->p_s.a3 = NULL;
+	}
+	else {
+		//~ tprint("process\n");
+		if ((pcb_t **)currentProcess->p_s.a2 != NULL) *(pcb_t **)currentProcess->p_s.a2 = currentProcess;
+		if ((pcb_t **)currentProcess->p_s.a3 != NULL) {
+			if (currentProcess->p_parent->p_parent == NULL) *(pcb_t **)currentProcess->p_s.a3 = NULL;	//if parent is root
+			else *(pcb_t **)currentProcess->p_s.a3 = currentProcess->p_parent;
+		}
 	}
 }
 
-//Added missing SYSCALL10
 void waitchld(){
- 	
+	extern unsigned int softBlock;
+	extern pcb_t *currentProcess;
+	if (currentProcess->p_first_child != NULL){	// if no child, don't wait
+		softBlock += 1;
+		insertBlocked((int *)currentProcess, currentProcess);
+		currentProcess = NULL;
+	}
 }
