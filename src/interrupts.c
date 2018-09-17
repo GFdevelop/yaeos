@@ -12,11 +12,12 @@
 
 extern state_t *INT_Old;
 extern pcb_t *currentProcess, *readyQueue;
-extern unsigned int softBlock, kernelStart;
+extern unsigned int softBlock, kernel_start, isPseudo;
+extern int sem_devices[MAX_DEVICES];
 //Hints from pages 130 and 63, uARMconst.h and libuarm.h
 void INT_handler(){
 
-	kernelStart = getTODLO();
+	kernel_start = getTODLO();
 	INT_Old = (state_t *) INT_OLDAREA;
 	if(currentProcess){
 		INT_Old->pc = INT_Old->pc - 4;
@@ -25,31 +26,14 @@ void INT_handler(){
 
 	unsigned int cause = getCAUSE();
 
-	if(CAUSE_IP_GET(cause, INT_TIMER)){
-		tprint("Timer interrupt\n");
-		timer_HDL();
-	}else if(CAUSE_IP_GET(cause, INT_LOWEST)){
-		//tprint("Lowest interrupt\n");
-		device_HDL(INT_LOWEST);
-	}else if(CAUSE_IP_GET(cause, INT_DISK)){
-		//tprint("Disk interrupt\n");
-		device_HDL(INT_DISK);
-	}else if(CAUSE_IP_GET(cause, INT_TAPE)){
-		//tprint("Tape interrupt\n");
-		device_HDL(INT_TAPE);
-	}else if(CAUSE_IP_GET(cause, INT_UNUSED)){
-		//tprint("Unused interrupt\n");
-		device_HDL(INT_UNUSED);
-	}else if(CAUSE_IP_GET(cause, INT_PRINTER)){
-		//tprint("Printer interrupt\n");
-		device_HDL(INT_PRINTER);
-	}else if(CAUSE_IP_GET(cause, INT_TERMINAL)){
-		//tprint("Terminal interrupt\n");
-		terminal_HDL();
-	}else{
-		//tprint("Interrupt not recognized!\n");
-		PANIC();
-	}
+	if(CAUSE_IP_GET(cause, INT_TIMER)) timer_HDL();
+	else if(CAUSE_IP_GET(cause, INT_LOWEST)) device_HDL(INT_LOWEST);
+	else if(CAUSE_IP_GET(cause, INT_DISK)) device_HDL(INT_DISK);
+	else if(CAUSE_IP_GET(cause, INT_TAPE)) device_HDL(INT_TAPE);
+	else if(CAUSE_IP_GET(cause, INT_UNUSED)) device_HDL(INT_UNUSED);
+	else if(CAUSE_IP_GET(cause, INT_PRINTER)) device_HDL(INT_PRINTER);
+	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) terminal_HDL();
+	else PANIC();
 
 	scheduler();
 
@@ -58,15 +42,23 @@ void INT_handler(){
 
 //TODO: The lower the line, the higher the priority
 void timer_HDL(){
-	extern unsigned int aging_times, isAging;
+	extern unsigned int isPseudo, isAging;
+	extern cpu_t lastPseudo, lastAging;
 	extern pcb_t *currentProcess;
 
-	if(aging_times == 10){
-		aging_times = 0;
-		//pseudo-clock()
+	cpu_t timeToPseudo = getTODLO() - lastPseudo;
+
+	if(timeToPseudo >= PSEUDO_TIME || isPseudo){
+		isPseudo = 0;
+		forallBlocked(&sem_devices[CLOCK_SEM], pseudo_clock, NULL);
+		lastPseudo = getTODLO();
 	}
 
-	if(!isAging){
+	if(isAging){
+		isAging = 0;
+		forallProcQ(readyQueue, ager, NULL);
+		lastAging = getTODLO();
+	}else{
 		insertProcQ(&readyQueue, currentProcess);
 		currentProcess = NULL;
 	}
@@ -156,4 +148,17 @@ void sendACK(termreg_t* device, int type, int index){
 	}
 	currentProcess->p_s.a2 = (unsigned int)&sem_devices[index];
 	semv();
+}
+
+void pseudo_clock(){
+	extern pcb_t *readyQueue;
+	extern int sem_devices[MAX_DEVICES];
+	extern unsigned int softBlock;
+
+	insertProcQ(&readyQueue, removeBlocked(&sem_devices[CLOCK_SEM]));
+	softBlock -= 1;
+}
+
+void ager(pcb_t *item, void *args){
+	item->p_priority += 1;
 }

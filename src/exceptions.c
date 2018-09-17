@@ -86,7 +86,7 @@ void SYSBK_handler(){
 			gettime();
 			break;
 		case WAITCLOCK:
-			tprint("WAITCLOCK\n");
+			//tprint("WAITCLOCK\n");
 			waitclock();
 			break;
 		case IODEVOP:
