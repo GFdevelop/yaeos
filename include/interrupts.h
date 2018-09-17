@@ -6,6 +6,7 @@
 
 #include <uARMtypes.h>
 #include "asl.h"
+#include "initial.h"
 
 void INT_handler();
 void timer_HDL();
@@ -18,6 +19,9 @@ void sendACK(termreg_t*, int, int);
 void pseudo_clock();
 void ager(pcb_t*, void *);
 
-state_t *INT_Old;
+extern pcb_t *currentProcess, *readyQueue;
+extern unsigned int softBlock, kernel_start, isPseudo, isAging;
+extern cpu_t lastPseudo, lastAging;
+extern int sem_devices[MAX_DEVICES];
 
 #endif

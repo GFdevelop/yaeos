@@ -1,6 +1,5 @@
 #include "initial.h"
 
-#include "pcb.h"
 #include "asl.h"
 
 #include "interrupts.h"
@@ -9,15 +8,6 @@
 
 #include <uARMconst.h>
 #include <libuarm.h>
-#include <arch.h>
-
-
-pcb_t *readyQueue, *currentProcess;
-unsigned int processCount, softBlock;
-unsigned int sem_devices[MAX_DEVICES];
-
-cpu_t lastAging, lastPseudo, curProc_start, kernel_start;
-unsigned int isPseudo = 0, isAging = 0;
 
 int main(int argc, char const *argv[]){
 
@@ -53,9 +43,11 @@ int main(int argc, char const *argv[]){
 	first->p_s.pc = (memaddr)test;
 	insertProcQ(&readyQueue, first);
 	
-	//6. Call to scheduler
+	//6. Scheduler's vars initialization and call to scheduler
 	lastPseudo = getTODLO();
-	lastAging = lastPseudo;
+	lastAging = getTODLO();
+	isAging = 0;
+	isPseudo = 0;
 	scheduler();
 	
 	return 0;

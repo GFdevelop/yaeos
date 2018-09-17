@@ -11,4 +11,8 @@
 void scheduler();
 cpu_t nextSlice();
 
+extern pcb_t *readyQueue, *currentProcess;
+extern unsigned int processCount, softBlock, isPseudo, isAging;
+extern cpu_t curProc_start, kernel_start, lastPseudo, lastAging;
+
 #endif
