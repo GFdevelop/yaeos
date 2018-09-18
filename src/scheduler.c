@@ -8,11 +8,11 @@
 cpu_t slice;											//Keeps track of the value of last slice
 
 void scheduler(){
-	//Every time a process ends, currentProcess is set to NULL.
+	//Every time a process ends, currentPCB is set to NULL.
 	//This means that a new process have to be selected for execution.
-	if(currentProcess == NULL){	
+	if(currentPCB == NULL){	
 		if(headProcQ(readyQueue) != NULL){				//NULL head means empty readyQueue
-			currentProcess = removeProcQ(&readyQueue);	
+			currentPCB = removeProcQ(&readyQueue);	
 			slice = nextSlice();
 		}else{											//If readyQueue is empty, deadlock control is performed
 			if(processCount == 0) HALT();				//Shutdown
@@ -24,14 +24,14 @@ void scheduler(){
 				}
 			}
 		}
-	}else{												//currentProcess != NULL means that scheduler has been called after an interrupt
+	}else{												//currentPCB != NULL means that scheduler has been called after an interrupt
 		slice -= (kernel_start - curProc_start);		//slice updated to remaining time and kernel time just spent is added
-		currentProcess->kernel_time += (getTODLO() - kernel_start);
+		currentPCB->kernel_time += (getTODLO() - kernel_start);
 	}
 	setTIMER(slice);									
 	curProc_start = getTODLO();
-	if(!currentProcess->activation_time) currentProcess->activation_time = curProc_start; 
-	LDST(&currentProcess->p_s);
+	if(!currentPCB->activation_time) currentPCB->activation_time = curProc_start; 
+	LDST(&currentPCB->p_s);
 
 }
 

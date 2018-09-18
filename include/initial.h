@@ -13,10 +13,10 @@ typedef unsigned int cpu_t;
 extern void test();
 void newArea(memaddr address, void handler());
 
-pcb_t *readyQueue, *currentProcess;							
+pcb_t *readyQueue, *currentPCB;							
 unsigned int processCount, softBlock;
 unsigned int isPseudo, isAging;								//Flag vars used to manage time
-int sem_devices[MAX_DEVICES];
+int semDev[MAX_DEVICES];
 cpu_t lastAging, lastPseudo, curProc_start, kernel_start;	//Timestamps for time accounting
 
 #endif
