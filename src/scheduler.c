@@ -1,71 +1,51 @@
 #include "scheduler.h"
 
 #include "pcb.h"
+#include "initial.h"
 
 #include <libuarm.h>
 
+cpu_t slice;											//Keeps track of the value of last slice
+
 void scheduler(){
-
-	extern pcb_t *readyQueue, *currentProcess;
-	extern unsigned int processCount, softBlock;
-	extern unsigned int isAging, aging_elapsed, aging_times, curProc_start, kernelStart;
-	unsigned int slice;
-
-	//4. AGING: di norma slice = TIME_SLICE ma, se il tempo mancante per l'aging < TIME_SLICE
-	//il prossimo timer viene settato a questa quantità e l'interrupt deve essere interpretato in tal senso 
-	if(isAging){
-		isAging = 0;
-		aging_elapsed = 0;	
-		
-		forallProcQ(readyQueue, ager, NULL);
-
-		aging_times += 1;
-	}
-	//1. Alla fine di ogni TIME_SLICE, currentProcess viene rimesso a NULL
-	//
+	//Every time a process ends, currentProcess is set to NULL.
+	//This means that a new process have to be selected for execution.
 	if(currentProcess == NULL){	
-		if(headProcQ(readyQueue) != NULL){
-			slice = nextSlice();	//Selezioniamo la durata del nuovo timer
-			currentProcess = removeProcQ(&readyQueue);	//rimuoviamo il prcesso dalla coda, se tutto va bene sarà rimesso in coda poi
-		}else{
-			if(!processCount){
-				tprint("processCount = 0, SHUTDOWN\n");
-				HALT();
-			}else{
-				if(!softBlock){
-					tprint("System is deadlocked, sir. PANIC!\n");
-					PANIC();
-				}else{
+		if(headProcQ(readyQueue) != NULL){				//NULL head means empty readyQueue
+			currentProcess = removeProcQ(&readyQueue);	
+			slice = nextSlice();
+		}else{											//If readyQueue is empty, deadlock control is performed
+			if(processCount == 0) HALT();				//Shutdown
+			else{ 
+				if(softBlock == 0) PANIC();				//Deadlock
+				else{									//Wait for an interrupt
 					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
-					tprint("System is waiting!\n");
 					WAIT();
 				}
 			}
 		}
-	//3. Ci troviamo in questo caso se un processo viene interrotto durante la sua esecuzione
-	}else{
-		//Addebito il tempo trascorso in kernel mode dal processo
-		//tprint("Here3");
-		currentProcess->kernel_time += (getTODLO() - kernelStart); 
-		//Il nuovo valore del timer sarà il tempo rimanente
-		slice = TIME_SLICE - (kernelStart - curProc_start);
+	}else{												//currentProcess != NULL means that scheduler has been called after an interrupt
+		slice -= (kernel_start - curProc_start);		//slice updated to remaining time and kernel time just spent is added
+		currentProcess->kernel_time += (getTODLO() - kernel_start);
 	}
-	setTIMER(slice);	//Setto effettivamente il prossimo timer
-	curProc_start = getTODLO();	
-	LDST(&currentProcess->p_s);	//Ricomincia la festa!
+	setTIMER(slice);									
+	curProc_start = getTODLO();
+	if(!currentProcess->activation_time) currentProcess->activation_time = curProc_start; 
+	LDST(&currentProcess->p_s);
 
 }
 
-unsigned int nextSlice(){
-	extern unsigned int aging_elapsed, isAging, curProc_start;
-	unsigned int slice;
+cpu_t nextSlice(){
+	//Remaining times to pseudo-clock tick or aging tick are calculated
+	cpu_t toAging = AGING_TIME - (getTODLO() - lastAging); 
+	cpu_t toPseudo = PSEUDO_TIME - (getTODLO() - lastPseudo);
+	cpu_t next = TIME_SLICE;
+	//If one of the remaining times is lower than 3ms, next slice and relative flag are set to reflect that
+	if(next >= toPseudo) next = toPseudo;
+	if(next >= toAging) next = toAging;
 
-	aging_elapsed += (getTODLO() - curProc_start);
-	slice = MIN(TIME_SLICE, (AGING_TIME - aging_elapsed));
-	if(slice < TIME_SLICE) isAging = 1;
-	return slice;
-}
-
-void ager(struct pcb_t *pcb, void *count){
-	pcb->p_priority += 1;	
+	if(next == toPseudo) isPseudo = 1;
+	if(next == toAging) isAging = 1;
+	
+	return next;
 }

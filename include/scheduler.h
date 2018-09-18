@@ -2,13 +2,17 @@
 #define SCHEDULER_H
 
 #include "pcb.h"
+#include "initial.h"
 
-#define TIME_SLICE 3000
-#define AGING_TIME 10000
-#define PSEUDO_TIME 100000
+#define TIME_SLICE 3000UL
+#define AGING_TIME 10000UL
+#define PSEUDO_TIME 100000UL
 
 void scheduler();
-unsigned int nextSlice();
-void ager(pcb_t *, void *);
+cpu_t nextSlice();
+
+extern pcb_t *readyQueue, *currentProcess;
+extern unsigned int processCount, softBlock, isPseudo, isAging;
+extern cpu_t curProc_start, kernel_start, lastPseudo, lastAging;
 
 #endif

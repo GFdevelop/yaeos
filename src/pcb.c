@@ -41,10 +41,10 @@ pcb_t *allocPcb(){
 		ret->p_parent = NULL;
 		ret->p_first_child = NULL;
 		ret->p_sib = NULL;
-		
-		ret->start_time = 0;
-		ret->user_time = 0;
+
+		ret->activation_time = 0;
 		ret->kernel_time = 0;
+		ret->user_time = 0;
 		return ret;
 	}
 }

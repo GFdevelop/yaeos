@@ -1,6 +1,5 @@
 #include "initial.h"
 
-#include "pcb.h"
 #include "asl.h"
 
 #include "interrupts.h"
@@ -9,42 +8,6 @@
 
 #include <uARMconst.h>
 #include <libuarm.h>
-#include <arch.h>
-
-
-pcb_t *readyQueue, *currentProcess;
-unsigned int processCount, softBlock;
-unsigned int sem_devices[MAX_DEVICES], sem_termination;
-
-unsigned int aging_elapsed = 0;
-unsigned int aging_times = 0;
-unsigned int isAging = 0;
-unsigned int kernelStart, curProc_start;
-
-//~ typedef struct {
-	//~ unsigned int a1; 			//r0: first function argument / integer result
-	//~ unsigned int a2; 			//r1: second function argument
-	//~ unsigned int a3; 			//r2: third function argument
-	//~ unsigned int a4; 			//r3: fourth function argument
-	//~ unsigned int v1; 			//r4: register variable
-	//~ unsigned int v2; 			//r5: register variable
-	//~ unsigned int v3; 			//r6: register variable
-	//~ unsigned int v4; 			//r7: register variable
-	//~ unsigned int v5; 			//r8: register variable
-	//~ unsigned int v6; 			//r9: (v6/rfp) register variable / real frame pointer
-	//~ unsigned int sl; 			//r10: stack limit
-	//~ unsigned int fp; 			//r11: frame pointer / argument pointer
-	//~ unsigned int ip; 			//r12: instruction pointer / temporary workspace
-	//~ unsigned int sp; 			//r13: stack pointer
-	//~ unsigned int lr; 			//r14: link register
-	//~ unsigned int pc; 			//r15: program counter
-	//~ unsigned int cpsr;			// current program status register, kernel mode cpsr[0-4]=0x1F	?!?!?
-	//~ unsigned int CP15_Control;	// virtual memory on/off, address resolution off CP15_Control[0]=0
-	//~ unsigned int CP15_EntryHi;	// Address Space Identifier (ASID)
-	//~ unsigned int CP15_Cause;	// cause of the PgmTrap exception
-	//~ unsigned int TOD_Hi;		// time of day, high bits
-	//~ unsigned int TOD_Low;		// time of day, low bits
-//~ } state_t;
 
 int main(int argc, char const *argv[]){
 
@@ -67,8 +30,8 @@ int main(int argc, char const *argv[]){
 	readyQueue = NULL;
 
 	//4. Nucleus' semaphores init
-	for(i = 0; i < MAX_DEVICES; i++) sem_devices[i] = 1;
-	sem_termination = 0;
+	for(i = 0; i < CLOCK_SEM; i++) sem_devices[i] = 1;
+	sem_devices[CLOCK_SEM] = 0;
 
 	//5. First process' PCB
 	pcb_t *first = allocPcb();
@@ -80,7 +43,11 @@ int main(int argc, char const *argv[]){
 	first->p_s.pc = (memaddr)test;
 	insertProcQ(&readyQueue, first);
 	
-	//6. Call to scheduler
+	//6. Scheduler's vars initialization and call to scheduler
+	lastPseudo = getTODLO();
+	lastAging = getTODLO();
+	isAging = 0;
+	isPseudo = 0;
 	scheduler();
 	
 	return 0;
