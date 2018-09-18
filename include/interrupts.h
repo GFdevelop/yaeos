@@ -19,9 +19,9 @@ void sendACK(termreg_t*, int, int);
 void pseudo_clock();
 void ager(pcb_t*, void *);
 
-extern pcb_t *currentProcess, *readyQueue;
+extern pcb_t *currentPCB, *readyQueue;
 extern unsigned int softBlock, kernel_start, isPseudo, isAging;
 extern cpu_t lastPseudo, lastAging;
-extern int sem_devices[MAX_DEVICES];
+extern int semDev[MAX_DEVICES];
 
 #endif

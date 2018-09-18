@@ -33,8 +33,8 @@ unsigned int iodevop();
 void getpids();
 void waitchld();
 
-extern pcb_t*currentProcess, *readyQueue;
+extern pcb_t*currentPCB, *readyQueue;
 extern unsigned int processCount, softBlock;
-extern int sem_devices[MAX_DEVICES];
+extern int semDev[MAX_DEVICES];
 
 #endif

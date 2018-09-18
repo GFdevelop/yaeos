@@ -11,8 +11,8 @@
 #include <libuarm.h>
 
 void TLB_handler(){
-	if(currentProcess){
-		currentProcess->user_time += (getTODLO() - curProc_start);
+	if(currentPCB){
+		currentPCB->user_time += (getTODLO() - curProc_start);
 		kernel_start = getTODLO();
 	}
 	tprint("TLB\n");
@@ -20,8 +20,8 @@ void TLB_handler(){
 }
 
 void PGMT_handler(){
-	if(currentProcess){
-		currentProcess->user_time += (getTODLO() - curProc_start);
+	if(currentPCB){
+		currentPCB->user_time += (getTODLO() - curProc_start);
 		kernel_start = getTODLO();
 	}
 	tprint("PGMT\n");
@@ -30,9 +30,9 @@ void PGMT_handler(){
 //TODO: Syscalls ok, but brakpoint?
 void SYSBK_handler(){
 
-	if(currentProcess){
-		SVST((state_t *) SYSBK_OLDAREA, &currentProcess->p_s);
-		currentProcess->user_time += (getTODLO() - curProc_start);
+	if(currentPCB){
+		SVST((state_t *) SYSBK_OLDAREA, &currentPCB->p_s);
+		currentPCB->user_time += (getTODLO() - curProc_start);
 		kernel_start = getTODLO();		
 	}
 	
@@ -79,10 +79,10 @@ int createprocess(){
 	pcb_t *new = allocPcb();
 	if (new == NULL) return -1;
 	else {
-		SVST((state_t *)currentProcess->p_s.a2,&new->p_s);
-		new->p_priority = currentProcess->p_s.a3;
-		insertChild(currentProcess, new);
-		*(pcb_t **)currentProcess->p_s.a4 = new;
+		SVST((state_t *)currentPCB->p_s.a2,&new->p_s);
+		new->p_priority = currentPCB->p_s.a3;
+		insertChild(currentPCB, new);
+		*(pcb_t **)currentPCB->p_s.a4 = new;
 		insertProcQ(&readyQueue,new);
 		processCount += 1;
 		return 0;
@@ -92,8 +92,8 @@ int createprocess(){
 int terminateprocess(){
 	pcb_t *head, *tmp;
 	
-	if ((pcb_t *)currentProcess->p_s.a2 == NULL) head = currentProcess;
-	else head = (pcb_t *)currentProcess->p_s.a2;
+	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
+	else head = (pcb_t *)currentPCB->p_s.a2;
 	tmp = head;
 	while (tmp != NULL){	// TODO: all :)
 		if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
@@ -105,14 +105,14 @@ int terminateprocess(){
 					freePcb(removeBlocked((int *)&(tmp->p_first_child)));
 					softBlock -= 1;
 				}
-				else if (tmp->p_first_child != currentProcess) freePcb(outProcQ(&readyQueue,tmp->p_first_child));
+				else if (tmp->p_first_child != currentPCB) freePcb(outProcQ(&readyQueue,tmp->p_first_child));
 				else freePcb(tmp->p_first_child);
 				processCount -= 1;
 			}
 			else tmp = NULL;
 		}
 	}
-	if (head != currentProcess) {	// currentProcess isn't blocked and isn't in readyQueue then we skip this
+	if (head != currentPCB) {	// currentPCB isn't blocked and isn't in readyQueue then we skip this
 		if (headBlocked(head->p_semKey)) {	// if head is blocked we don't remove it from readyQueue
 			outChildBlocked(head);
 			softBlock -= 1;
@@ -133,84 +133,82 @@ int terminateprocess(){
 }
 
 void semv(){
-    pcb_t *tmp;
-    int *value = (int *)currentProcess->p_s.a2;
-    if (headBlocked(value)) {
+    int *value = (int *)currentPCB->p_s.a2;
+    if(headBlocked(value) != NULL) {
         softBlock -= 1;
-        tmp = removeBlocked(value);
-        insertProcQ(&readyQueue, tmp);
+        insertProcQ(&readyQueue, removeBlocked(value));
     }
-    if(*value <= 1) *value += 1;
+    if(*value <= 1) *value += 1; //Non va bene
 }
  
 void semp(){
-    int *value = (int *)currentProcess->p_s.a2;
-    if (((*value) <= 0) || ((value >= sem_devices) && (value <= &sem_devices[CLOCK_SEM]))){
-        insertBlocked(value, currentProcess);
+    int *value = (int *)currentPCB->p_s.a2;
+    if (((*value) <= 0) || ((value >= semDev) && (value <= &semDev[MAX_DEVICES]))){
+        insertBlocked(value, currentPCB);
         softBlock += 1;
-        currentProcess = NULL;
+        currentPCB = NULL;
     }else *value -= 1;
 }
 
 int spechdl(){
 	// TODO: only one time for type
-	extern pcb_t *currentProcess;
+	extern pcb_t *currentPCB;
 	unsigned int area;
-	if (currentProcess->p_s.a2 == SPECSYSBP) area = SYSBK_NEWAREA;
-	else if (currentProcess->p_s.a2 == SPECTLB)  area = TLB_NEWAREA;
-	else if (currentProcess->p_s.a2 == SPECPGMT)  area = PGMTRAP_NEWAREA;
+	if (currentPCB->p_s.a2 == SPECSYSBP) area = SYSBK_NEWAREA;
+	else if (currentPCB->p_s.a2 == SPECTLB)  area = TLB_NEWAREA;
+	else if (currentPCB->p_s.a2 == SPECPGMT)  area = PGMTRAP_NEWAREA;
 	else return -1;
-	currentProcess->p_s.a3 = area;
-	area = currentProcess->p_s.a4;
+	currentPCB->p_s.a3 = area;
+	area = currentPCB->p_s.a4;
 	return 0;
 }
 
 void gettime(){
-	currentProcess->p_s.a2 = currentProcess->user_time;
-	currentProcess->p_s.a3 = ((getTODLO() - kernel_start) + currentProcess->kernel_time);
-	currentProcess->p_s.a4 = getTODLO() - currentProcess->activation_time;
+	currentPCB->p_s.a2 = currentPCB->user_time;
+	currentPCB->p_s.a3 = ((getTODLO() - kernel_start) + currentPCB->kernel_time);
+	currentPCB->p_s.a4 = getTODLO() - currentPCB->activation_time;
 }
 
 void waitclock(){
-	currentProcess->p_s.a2 = (unsigned int)&sem_devices[CLOCK_SEM];
+	currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
 	semp();
 }
 
 unsigned int iodevop(){
-	unsigned int subdev_no, device = currentProcess->p_s.a3;
-	unsigned int command = currentProcess->p_s.a2;
+	unsigned int subdev_no, device = currentPCB->p_s.a3;
+	unsigned int command = currentPCB->p_s.a2;
 	
 	termreg_t *term = (termreg_t *) (device - 2*WS);
 	subdev_no = instanceNo(LINE_NO(device - 2*WS));
 	//TODO: Differenziare lettori - scrittori
-	currentProcess->p_s.a2 = (unsigned int)&sem_devices[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
+	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
 	
 	semp();
 
 	term->transm_command = command;
-	return term->transm_status;
+	//return term->transm_status;
 }
 
 void getpids(){
-	if (currentProcess->p_parent == NULL) {
+	if (currentPCB->p_parent == NULL) {
 		//~ tprint("root\n");
-		if ((pcb_t **)currentProcess->p_s.a2 != NULL) *(pcb_t **)currentProcess->p_s.a2 = NULL;
-		if ((pcb_t **)currentProcess->p_s.a3 != NULL) *(pcb_t **)currentProcess->p_s.a3 = NULL;
+		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = NULL;
+		if ((pcb_t **)currentPCB->p_s.a3 != NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;
 	}
 	else {
 		//~ tprint("process\n");
-		if ((pcb_t **)currentProcess->p_s.a2 != NULL) *(pcb_t **)currentProcess->p_s.a2 = currentProcess;
-		if ((pcb_t **)currentProcess->p_s.a3 != NULL) {
-			if (currentProcess->p_parent->p_parent == NULL) *(pcb_t **)currentProcess->p_s.a3 = NULL;	//if parent is root
-			else *(pcb_t **)currentProcess->p_s.a3 = currentProcess->p_parent;
+		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = currentPCB;
+		if ((pcb_t **)currentPCB->p_s.a3 != NULL) {
+			if (currentPCB->p_parent->p_parent == NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;	//if parent is root
+			else *(pcb_t **)currentPCB->p_s.a3 = currentPCB->p_parent;
 		}
 	}
 }
 
 void waitchld(){
-	if (currentProcess->p_first_child != NULL){	// if no child, don't wait
+	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
 		softBlock += 1;
-		insertBlocked((int *)currentProcess, currentProcess);
-		currentProcess = NULL;
+		insertBlocked((int *)currentPCB, currentPCB);
+		currentPCB = NULL;
 	}
 }

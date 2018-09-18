@@ -26,12 +26,12 @@ int main(int argc, char const *argv[]){
 	//3. Nucleus maintained variables init
 	processCount = 1;
 	softBlock = 0;
-	currentProcess = NULL;
+	currentPCB = NULL;
 	readyQueue = NULL;
 
 	//4. Nucleus' semaphores init
-	for(i = 0; i < CLOCK_SEM; i++) sem_devices[i] = 1;
-	sem_devices[CLOCK_SEM] = 0;
+	for(i = 0; i < CLOCK_SEM; i++) semDev[i] = 1;
+	semDev[CLOCK_SEM] = 0;
 
 	//5. First process' PCB
 	pcb_t *first = allocPcb();
@@ -50,7 +50,7 @@ int main(int argc, char const *argv[]){
 	isPseudo = 0;
 	scheduler();
 	
-	return 0;
+	PANIC();
 }
 
 void newArea(unsigned int address, void handler()){

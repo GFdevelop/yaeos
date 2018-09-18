@@ -12,11 +12,11 @@
 
 void INT_handler(){
 	
-	if(currentProcess){
-		SVST((state_t *)INT_OLDAREA, &currentProcess->p_s);			//Copy the INT_OLDAREA into currentProcess
-		currentProcess->user_time += (getTODLO() - curProc_start);
+	if(currentPCB){
+		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);			//Copy the INT_OLDAREA into currentPCB
+		currentPCB->user_time += (getTODLO() - curProc_start);
 		kernel_start = getTODLO();
-		currentProcess->p_s.pc -= WS;								//Reset the program counter to the previous instruction
+		currentPCB->p_s.pc -= WS;								//Reset the program counter to the previous instruction
 	}
 
 	unsigned int cause = getCAUSE();
@@ -35,9 +35,9 @@ void INT_handler(){
 
 void timer_HDL(){
 
-	if(isPseudo){
+	if(isPseudo || (getTODLO() - lastPseudo >= PSEUDO_TIME)){
 		isPseudo = 0;
-		forallBlocked(&sem_devices[CLOCK_SEM], pseudo_clock, NULL);
+		forallBlocked(&semDev[CLOCK_SEM], pseudo_clock, NULL);
 		lastPseudo = getTODLO();
 	}
 
@@ -46,8 +46,8 @@ void timer_HDL(){
 		forallProcQ(readyQueue, ager, NULL);
 		lastAging = getTODLO();
 	}else{
-		insertProcQ(&readyQueue, currentProcess);
-		currentProcess = NULL;
+		insertProcQ(&readyQueue, currentPCB);
+		currentPCB = NULL;
 	}
 }
 
@@ -118,7 +118,7 @@ unsigned int instanceNo(int device){
 //Send the ACK signal and copy the device status to the appropriate fields based on type value
 //Then, free the busy device
 void sendACK(termreg_t* device, int type, int index){
-	pcb_t *firstBlocked = headBlocked(&sem_devices[index]);
+	pcb_t *firstBlocked = headBlocked(&semDev[index]);
 	switch (type) {
 		case TRANSM:
 			firstBlocked->p_s.a1 = device->transm_status;
@@ -129,12 +129,12 @@ void sendACK(termreg_t* device, int type, int index){
 			device->recv_command = DEV_C_ACK;
 			break;
 	}
-	currentProcess->p_s.a2 = (unsigned int)&sem_devices[index];
+	currentPCB->p_s.a2 = (unsigned int)&semDev[index];
 	semv();
 }
 
 void pseudo_clock(){
-	insertProcQ(&readyQueue, removeBlocked(&sem_devices[CLOCK_SEM]));
+	insertProcQ(&readyQueue, removeBlocked(&semDev[CLOCK_SEM]));
 	softBlock -= 1;
 }
 
