@@ -30,12 +30,12 @@
 
 int createprocess();
 int terminateprocess();
-void semv(unsigned int a2);
-void semp(unsigned int a2);
+void semv();
+void semp();
 int spechdl();
 void gettime();
 void waitclock();
-unsigned int iodevop(unsigned int a2, unsigned int a3);
+void iodevop();
 void getpids();
 void waitchild();
 

@@ -21,7 +21,7 @@ void debugger(){};
 
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
-	extern int processCount, softBlockCount;
+	extern int processCount, softBlock;
 	
 	if (processCount){
 		if (currentPCB == NULL) {
@@ -29,7 +29,7 @@ void scheduler(){
 				currentPCB = removeProcQ(&readyQueue);
 			}
 			else {
-				if (softBlockCount) {
+				if (softBlock) {
 					//~ tprint("wait scheduler\n");
 					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 					WAIT();

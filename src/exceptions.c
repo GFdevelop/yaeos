@@ -48,7 +48,7 @@ void sysbkHandler(){
 			semv(((state_t *)SYSBK_OLDAREA)->a2);
 			break;
 		case(SEMP):
-			semp(((state_t *)SYSBK_OLDAREA)->a2);
+			semp();
 			break;
 		case(SPECHDL):
 			spechdl();
@@ -60,7 +60,7 @@ void sysbkHandler(){
 			waitclock();
 			break;
 		case(IODEVOP):
-			((state_t *)SYSBK_OLDAREA)->a1 = iodevop(((state_t *)SYSBK_OLDAREA)->a2,((state_t *)SYSBK_OLDAREA)->a3);
+			iodevop();
 			//~ ((state_t *)SYSBK_OLDAREA)->a1 = currentPCB->p_s.a1;
 			break;
 		case(GETPIDS):

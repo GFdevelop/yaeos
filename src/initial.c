@@ -53,7 +53,7 @@
 
 
 pcb_t *readyQueue, *currentPCB;
-int processCount, softBlockCount;
+int processCount, softBlock;
 int semDev[MAX_DEVICES];
 
 
@@ -83,7 +83,7 @@ int main() {
 	readyQueue = NULL;
 	currentPCB = NULL;
 	processCount = 1;
-	softBlockCount = 0;
+	softBlock = 0;
 	
 	//~ tprint("init semaphores\n");
 	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=1;
