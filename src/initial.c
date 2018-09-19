@@ -55,6 +55,8 @@
 pcb_t *readyQueue, *currentPCB;
 int processCount, softBlock;
 int semDev[MAX_DEVICES];
+int pcbSem[MAXPROC];
+int *pcbSemHead;
 
 
 void newArea(unsigned int address, void handler()){
@@ -84,9 +86,11 @@ int main() {
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
+	pcbSemHead = &pcbSem[0];
 	
 	//~ tprint("init semaphores\n");
-	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=1;
+	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=0;
+	for (int i=0; i<MAXPROC; i++) pcbSem[i]=1;
 	
 	//~ tprint("create first pcb\n");
 	currentPCB = allocPcb();

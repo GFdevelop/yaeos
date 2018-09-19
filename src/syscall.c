@@ -38,53 +38,56 @@ int createprocess(){
 }
 
 int terminateprocess(){
-	//~ tprint("terminateprocess\n");
+	tprint("terminateprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	pcb_t *head, *tmp;
 	extern int processCount, softBlock;
 	
 	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
 	else head = (pcb_t *)currentPCB->p_s.a2;
-	tmp = head;
-	while (tmp != NULL){	// TODO: all :)
-		if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
-		else {
-			if (tmp != head) {
-				tmp = tmp->p_parent;
-				//~ removeChild(tmp);
-				if (tmp->p_first_child != currentPCB) {
-					if (headBlocked(tmp->p_first_child->p_semKey)) {
-						outChildBlocked(tmp->p_first_child);
-						softBlock--;
-					}
-					else outProcQ(&readyQueue,tmp->p_first_child);
-				}
-				if (headBlocked((int *)tmp)) {
-					removeBlocked((int *)tmp);
-					softBlock--;
-					insertProcQ(&readyQueue, tmp);
-				}
-				outChild(tmp->p_first_child);
-				freePcb(tmp->p_first_child);
-				processCount--;
-			}
-			else tmp = NULL;
-		}
-	}
-	if (head != currentPCB) {	// currentPCB isn't blocked and isn't in readyQueue then we skip this
-		if (headBlocked(head->p_semKey)) {	// if head is blocked we don't remove it from readyQueue
-			outChildBlocked(head);
-			softBlock--;
-		}
-		else outProcQ(&readyQueue,head);	// if head is not blocked remove it
-	}
 	
-	if (headBlocked((int *)head->p_parent)) {	// if parent of head is in WAITCHILD then we unlock it
-		//~ outChildBlocked(head->p_parent);
-		removeBlocked((int *)head->p_parent);
-		softBlock--;
-		insertProcQ(&readyQueue, head->p_parent);
-	}
+	if (head == currentPCB) currentPCB = NULL;
+	
+	//~ tmp = head;
+	//~ while (tmp != NULL){	// TODO: all :)
+		//~ if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
+		//~ else {
+			//~ if (tmp != head) {
+				//~ tmp = tmp->p_parent;
+	//			removeChild(tmp);
+				//~ if (tmp->p_first_child != currentPCB) {
+					//~ if (tmp->p_first_child->p_semKey == 0) {
+						//~ outChildBlocked(tmp->p_first_child);
+					//~ }
+					//~ else outProcQ(&readyQueue,tmp->p_first_child);
+				//~ }
+				//~ if (tmp->p_semKey == 0) {
+					//~ removeBlocked(tmp->p_semKey);
+					//~ insertProcQ(&readyQueue, tmp);
+				//~ }
+				//~ outChild(tmp->p_first_child);
+				//~ freePcb(tmp->p_first_child);
+				//~ processCount--;
+			//~ }
+			//~ else tmp = NULL;
+		//~ }
+	//~ }
+	//~ if (head != currentPCB) {	// currentPCB isn't blocked and isn't in readyQueue then we skip this
+		//~ if (headBlocked(head->p_semKey)) {
+			//~ outChildBlocked(head);
+			//~ softBlock--;
+		//~ }
+	//~ //	else outProcQ(&readyQueue,head);	// if head is not blocked remove it
+	//~ }
+	//~ else currentPCB = NULL;
+	
+	//~ if (headBlocked(head->p_semKey)) {	// if parent of head is in WAITCHILD then we unlock it
+	//	outChildBlocked(head->p_parent);
+	//~ tprint("head\n");
+		//~ removeBlocked(head->p_parent->p_semKey);
+		//~ insertProcQ(&readyQueue, head->p_parent);
+		//~ softBlock--;
+	//~ }
 	
 	outChild(head);
 	freePcb(head);
@@ -92,36 +95,39 @@ int terminateprocess(){
 	return 0;
 }
 
+//~ pcb_t * findNext(int *value){
+	//~ pcb_t *next = removeBlocked(value);
+	//~ if (next != NULL) {
+		//~ if (next->p_semKey != value) {
+			//~ pcb_t *tmp = next;
+			//~ next = findNext(value);
+			//~ insertBlocked(tmp->p_semKey, tmp);
+		//~ }
+	//~ }
+	//~ return next;
+//~ }
+
 void semv(){
 	//~ tprint("semv\n");
 	extern pcb_t *currentPCB, *readyQueue;
-	extern int softBlock;
-	extern int semDev[MAX_DEVICES];
-	//~ state_t *old = (state_t*)SYSBK_OLDAREA;
-	//~ int *value = (int *)(old->a2);
 	int *value = (int *)currentPCB->p_s.a2;
-	if (((*value)++ < 0) || ((value >= semDev) && (value <= &semDev[MAX_DEVICES]))) {
-		//~ tprint("unlocked\n");
-		softBlock -= 1;
-		//~ currentPCB = removeBlocked((int *)a2);
-		insertProcQ(&readyQueue, removeBlocked(value));
-	}
+	//~ if ((*value)++ < 0) {
+		pcb_t *tmp = removeBlocked(value);
+		tmp->p_semKey = NULL;
+		insertProcQ(&readyQueue, tmp);
+		(*value)++;
+		//~ insertProcQ(&readyQueue, findNext(value));
+	//~ }
 }
 
 void semp(){
 	//~ tprint("semp\n");
 	extern pcb_t *currentPCB;
-	extern int softBlock;
-	extern int semDev[MAX_DEVICES];
-	//~ state_t *old = (state_t*)SYSBK_OLDAREA;
-	//~ int *value = (int *)(old->a2);
 	int *value = (int *)currentPCB->p_s.a2;
-	if ((--(*value) < 0) || ((value >= semDev) && (value <= &semDev[MAX_DEVICES]))) {
+	if (--(*value) < 0) {
 		//~ tprint("locked\n");
-		softBlock += 1;
-		insertBlocked(value, currentPCB);
+		if (insertBlocked(value, currentPCB)) PANIC();
 		currentPCB = NULL;
-		//~ scheduler();
 	}
 }
 
@@ -146,7 +152,7 @@ void gettime(){
 
 
 void waitclock(){
-	tprint("waitclock\n");
+	//~ tprint("waitclock\n");
 	extern pcb_t *currentPCB;
 	//~ SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
 }
@@ -156,12 +162,18 @@ void iodevop(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	unsigned int device_no = 0;
+	extern int softBlock;
 	termreg_t *term = (termreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
 	// TODO: device
 	device_no = findLineNo(LINENO(currentPCB->p_s.a3 - 2*WS));
-	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no];
-	semp();
-	term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;	// currentPCB->p_s.a2 is changed for the semp()
+	//~ currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no];
+	//~ semp();
+	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no]--;
+	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no], currentPCB);
+	softBlock += 1;
+	//~ term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;	// currentPCB->p_s.a2 is changed for the semp()
+	term->transm_command = currentPCB->p_s.a2;	// currentPCB->p_s.a2 is changed for the semp()
+	currentPCB = NULL;
 }
 
 void getpids(){
@@ -186,9 +198,13 @@ void waitchild(){
 	//~ tprint("waitchild\n");
 	extern int softBlock;
 	extern pcb_t *currentPCB;
+	extern int *pcbSemHead;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
-		softBlock += 1;
-		insertBlocked((int *)currentPCB, currentPCB);
+		//~ tprint("wait terminatechild\n");
+		currentPCB->p_s.pc -= WORD_SIZE;
+		if (insertBlocked(pcbSemHead, currentPCB)) PANIC();
+		pcbSemHead++;
+		softBlock++;
 		currentPCB = NULL;
 	}
 }

@@ -136,10 +136,10 @@ void SVST(state_t *A, state_t *B){
 
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
 void sendACK(termreg_t* device, int type, int index){
-	extern pcb_t *currentPCB;
-	extern int semDev[MAX_DEVICES];
+	extern pcb_t *currentPCB, *readyQueue;
+	extern int semDev[MAX_DEVICES], softBlock;
 
-	pcb_t *firstBlocked = headBlocked(&semDev[index]);
+	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 	//if(firstBlocked == NULL) WAIT();
 	switch (type) {
 		case TRANSM:
@@ -152,8 +152,12 @@ void sendACK(termreg_t* device, int type, int index){
 			break;
 	}
 	
-	if (semDev[index] < 1){
-		currentPCB->p_s.a2 = (unsigned int)&semDev[index];
-		semv();
-	}
+	//~ if (semDev[index] < 1){
+		//~ currentPCB->p_s.a2 = (unsigned int)&semDev[index];
+		//~ semv();
+		semDev[index]++;
+		firstBlocked->p_semKey = NULL;
+		insertProcQ(&readyQueue, firstBlocked);
+		softBlock--;
+	//~ }
 }
