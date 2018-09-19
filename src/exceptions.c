@@ -33,9 +33,9 @@ void SYSBK_handler(){
 	if(currentPCB){
 		SVST((state_t *) SYSBK_OLDAREA, &currentPCB->p_s);
 		currentPCB->user_time += (getTODLO() - curProc_start);
-		kernel_start = getTODLO();		
+		kernel_start = getTODLO();
 	}
-	
+
 	switch(((state_t *) SYSBK_OLDAREA)->a1){
 		case CREATEPROCESS:
 			createprocess();
@@ -91,7 +91,7 @@ int createprocess(){
 
 int terminateprocess(){
 	pcb_t *head, *tmp;
-	
+
 	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
 	else head = (pcb_t *)currentPCB->p_s.a2;
 	tmp = head;
@@ -119,13 +119,13 @@ int terminateprocess(){
 		}
 		else outProcQ(&readyQueue,head);	// if head is not blocked remove it
 	}
-	
+
 	if (headBlocked((int *)head->p_parent)) {	// if parent of head is in WAITCHILD then we unlock it
 		removeBlocked((int *)head->p_parent);
 		softBlock -= 1;
 		insertProcQ(&readyQueue, head->p_parent);
 	}
-	
+
 	outChild(head);
 	freePcb(head);
 	processCount -= 1;
@@ -140,7 +140,7 @@ void semv(){
     }
     if(*value <= 1) *value += 1; //Non va bene
 }
- 
+
 void semp(){
     int *value = (int *)currentPCB->p_s.a2;
     if (((*value) <= 0) || ((value >= semDev) && (value <= &semDev[MAX_DEVICES]))){
@@ -177,16 +177,25 @@ void waitclock(){
 unsigned int iodevop(){
 	unsigned int subdev_no, device = currentPCB->p_s.a3;
 	unsigned int command = currentPCB->p_s.a2;
-	
-	termreg_t *term = (termreg_t *) (device - 2*WS);
-	subdev_no = instanceNo(LINE_NO(device - 2*WS));
-	//TODO: Differenziare lettori - scrittori
-	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
-	
-	semp();
 
-	term->transm_command = command;
-	//return term->transm_status;
+	devreg_t *genericDev = (devreg_t *) (device - 2*WS);
+	subdev_no = instanceNo(LINE_NO(device - 2*WS));
+	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
+	semp();
+	//printint(LINE_NO((unsigned int)genericDev));
+	if (LINE_NO((unsigned int)genericDev)+1 != INT_TERMINAL /*se non è un terminale*/){
+		genericDev->dtp.command = command;
+	} else {
+		int a = instanceNo(LINE_NO((unsigned int)genericDev));
+		unsigned int terminalReading = ((LINE_NO((unsigned int)genericDev)+1) == INT_TERMINAL && a >> 31) ? N_DEV_PER_IL : 0;
+		if (terminalReading > 0 /*se il semaforo è in lettura*/){
+			//debuggerI();
+			genericDev->term.recv_command = command;
+		} else /*scrittura*/{
+			//debuggerO();
+			genericDev->term.transm_command = command;
+		}
+	}
 }
 
 void getpids(){

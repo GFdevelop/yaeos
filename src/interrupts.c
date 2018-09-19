@@ -11,7 +11,7 @@
 #include <arch.h>
 
 void INT_handler(){
-	
+
 	if(currentPCB){
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);			//Copy the INT_OLDAREA into currentPCB
 		currentPCB->user_time += (getTODLO() - curProc_start);
@@ -57,19 +57,21 @@ void device_HDL(unsigned int device){
 
 void terminal_HDL(){
 
-	termreg_t *term;
+	devreg_t *generic;
 	unsigned int terminal_no;
 
-	//1. Determines which sub-device has caused interrupt	
+	//1. Determines which sub-device has caused interrupt
 	terminal_no = instanceNo(INT_TERMINAL);
 
 	//2. Determines if the interrupt is for writing or reading (or both) and sends the relative ACK
-	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
-	
-	if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
-	}else if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+	generic = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+
+	if((generic->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		sendACK(generic, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
+	} else if((generic->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		sendACK(generic, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+	} else {
+		sendACK(generic, GENERIC, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
 	}
 
 }
@@ -110,23 +112,33 @@ unsigned int instanceNo(int device){
 		else{
 			subdev_no++;
 			*line = *line >> 1;								//Shift is used to navigate the bitmap
-		}	
+		}
 	}
 	return subdev_no;
 }
 
+void debuggt(){};
+void debuggg(){};
+void debuggr() {}
 //Send the ACK signal and copy the device status to the appropriate fields based on type value
 //Then, free the busy device
-void sendACK(termreg_t* device, int type, int index){
+void sendACK(devreg_t* device, int type, int index){
 	pcb_t *firstBlocked = headBlocked(&semDev[index]);
 	switch (type) {
 		case TRANSM:
-			firstBlocked->p_s.a1 = device->transm_status;
-			device->transm_command = DEV_C_ACK;
+			debuggt();
+			firstBlocked->p_s.a1 = device->term.transm_status;
+			device->term.transm_command = DEV_C_ACK;
 			break;
 		case RECV:
-			firstBlocked->p_s.a1 = device->recv_status;
-			device->recv_command = DEV_C_ACK;
+			debuggr();
+			firstBlocked->p_s.a1 = device->term.recv_status;
+			device->term.recv_command = DEV_C_ACK;
+			break;
+		case GENERIC:
+			debuggr();
+			firstBlocked->p_s.a1 = device->dtp.status;
+			device->dtp.command = DEV_C_ACK;
 			break;
 	}
 	currentPCB->p_s.a2 = (unsigned int)&semDev[index];
