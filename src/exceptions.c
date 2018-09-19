@@ -61,7 +61,6 @@ void sysbkHandler(){
 			break;
 		case(IODEVOP):
 			iodevop();
-			//~ ((state_t *)SYSBK_OLDAREA)->a1 = currentPCB->p_s.a1;
 			break;
 		case(GETPIDS):
 			getpids();

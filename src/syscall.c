@@ -21,7 +21,7 @@
 
 
 int createprocess(){
-	//~ tprint("createprocess\n");
+	tprint("createprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int processCount;
 	pcb_t *childPCB = allocPcb();
@@ -112,12 +112,13 @@ void semv(){
 	extern pcb_t *currentPCB, *readyQueue;
 	int *value = (int *)currentPCB->p_s.a2;
 	//~ if ((*value)++ < 0) {
+	if (headBlocked(value)) {
 		pcb_t *tmp = removeBlocked(value);
 		tmp->p_semKey = NULL;
 		insertProcQ(&readyQueue, tmp);
 		(*value)++;
 		//~ insertProcQ(&readyQueue, findNext(value));
-	//~ }
+	}
 }
 
 void semp(){
@@ -152,7 +153,7 @@ void gettime(){
 
 
 void waitclock(){
-	//~ tprint("waitclock\n");
+	tprint("waitclock\n");
 	extern pcb_t *currentPCB;
 	//~ SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
 }
@@ -195,16 +196,12 @@ void getpids(){
 }
 
 void waitchild(){
-	//~ tprint("waitchild\n");
+	tprint("waitchild\n");
 	extern int softBlock;
 	extern pcb_t *currentPCB;
-	extern int *pcbSemHead;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
 		//~ tprint("wait terminatechild\n");
-		currentPCB->p_s.pc -= WORD_SIZE;
-		if (insertBlocked(pcbSemHead, currentPCB)) PANIC();
-		pcbSemHead++;
-		softBlock++;
+		//~ currentPCB->p_s.pc -= WORD_SIZE;
 		currentPCB = NULL;
 	}
 }
