@@ -58,7 +58,7 @@ int semDev[MAX_DEVICES];
 int pcbSem[MAXPROC];
 
 
-void newArea(unsigned int address, void handler()){
+void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;

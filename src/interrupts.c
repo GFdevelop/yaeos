@@ -29,32 +29,17 @@ void intHandler(){
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
 	}
-	
-	if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TIMER)){
-		tprint("Timer interrupt\n");
-		timer_HDL();
-	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_LOWEST)){
-		tprint("Lowest interrupt\n");
-		device_HDL(INT_LOWEST);
-	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_DISK)){
-		tprint("Disk interrupt\n");
-		device_HDL(INT_DISK);
-	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TAPE)){
-		tprint("Tape interrupt\n");
-		device_HDL(INT_TAPE);
-	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_UNUSED)){
-		tprint("Unused interrupt\n");
-		device_HDL(INT_UNUSED);
-	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_PRINTER)){
-		tprint("Printer interrupt\n");
-		device_HDL(INT_PRINTER);
-	}else if(CAUSE_IP_GET((unsigned int)getCAUSE(), INT_TERMINAL)){
-		//~ tprint("Terminal interrupt\n");
-		terminal_HDL();
-	}else{
-		tprint("Interrupt not recognized!\n");
-		PANIC();
-	}
+
+	unsigned int cause = getCAUSE();
+
+	if(CAUSE_IP_GET(cause, INT_TIMER)) timer_HDL();
+	else if(CAUSE_IP_GET(cause, INT_LOWEST)) device_HDL(INT_LOWEST);
+	else if(CAUSE_IP_GET(cause, INT_DISK)) device_HDL(INT_DISK);
+	else if(CAUSE_IP_GET(cause, INT_TAPE)) device_HDL(INT_TAPE);
+	else if(CAUSE_IP_GET(cause, INT_UNUSED)) device_HDL(INT_UNUSED);
+	else if(CAUSE_IP_GET(cause, INT_PRINTER)) device_HDL(INT_PRINTER);
+	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) terminal_HDL();
+	else PANIC();
 	
 	//~ tprint("end\n");
 	//~ if (currentPCB) LDST((state_t *)INT_OLDAREA);
@@ -76,7 +61,7 @@ void terminal_HDL(){
 	//~ extern pcb_t *currentPCB;
 	//~ extern int semDev[MAX_DEVICES];
 
-	terminal_no = findLineNo(INT_TERMINAL);
+	terminal_no = instanceNo(INT_TERMINAL);
 	
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
@@ -88,25 +73,9 @@ void terminal_HDL(){
 	}
 	
 	//~ if (semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no] < 1){
-		//~ currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no];
+		//~ currentPCB->p_s.a2 = (memaddr)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no];
 		//~ semv();
 	//~ }
-}
-
-unsigned int findLineNo(unsigned int device){
-	memaddr *line;
-	unsigned int terminal_no = 0;
-	
-	//1. Determinare quale dei teminali ha generato l'interrupt
-	line = (memaddr *)IDEV_BITMAP_ADDR(device);
-	while(*line > 0){
-		if(*line & 1) break;
-		else{
-			terminal_no++;
-			*line = *line >> 1;
-		}	
-	}
-	return terminal_no;
 }
 
 void SVST(state_t *A, state_t *B){
@@ -134,6 +103,22 @@ void SVST(state_t *A, state_t *B){
 	B->TOD_Low = A->TOD_Low;
 }
 
+unsigned int instanceNo(unsigned int device){
+	memaddr *line;
+	unsigned int subdev_no = 0;
+	
+	//1. Determinare quale dei teminali ha generato l'interrupt
+	line = (memaddr *)IDEV_BITMAP_ADDR(device);
+	while(*line > 0){
+		if(*line & 1) break;
+		else{
+			subdev_no++;
+			*line = *line >> 1;
+		}	
+	}
+	return subdev_no;
+}
+
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
 void sendACK(termreg_t* device, int type, int index){
 	extern pcb_t *currentPCB, *readyQueue;
@@ -152,12 +137,9 @@ void sendACK(termreg_t* device, int type, int index){
 			break;
 	}
 	
-	//~ if (semDev[index] < 1){
-		//~ currentPCB->p_s.a2 = (unsigned int)&semDev[index];
-		//~ semv();
-		semDev[index]++;
-		firstBlocked->p_semKey = NULL;
-		insertProcQ(&readyQueue, firstBlocked);
-		softBlock--;
-	//~ }
+	//semv
+	semDev[index]++;
+	firstBlocked->p_semKey = NULL;
+	insertProcQ(&readyQueue, firstBlocked);
+	softBlock--;
 }

@@ -155,25 +155,27 @@ void gettime(){
 void waitclock(){
 	tprint("waitclock\n");
 	extern pcb_t *currentPCB;
-	//~ SYSCALL(SEMP, (unsigned int)currentPCB, 0, 0);
+	//~ SYSCALL(SEMP, (memaddr)currentPCB, 0, 0);
 }
 
 void iodevop(){
 	//~ tprint("iodevop\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	unsigned int device_no = 0;
+	unsigned int subdev_no = 0;
 	extern int softBlock;
 	termreg_t *term = (termreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
 	// TODO: device
-	device_no = findLineNo(LINENO(currentPCB->p_s.a3 - 2*WS));
-	//~ currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no];
-	//~ semp();
-	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no]--;
-	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + device_no], currentPCB);
+	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
+	
+	//semp
+	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no]--;
+	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
-	//~ term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;	// currentPCB->p_s.a2 is changed for the semp()
+	
 	term->transm_command = currentPCB->p_s.a2;	// currentPCB->p_s.a2 is changed for the semp()
+	
+	//semp
 	currentPCB = NULL;
 }
 

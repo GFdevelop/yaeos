@@ -39,7 +39,7 @@ void scheduler(){
 		}
 		LDST(&currentPCB->p_s);
 		
-		//SYSCALL(SEMV, (unsigned int)readyQueue[turn], 0, 0);
+		//SYSCALL(SEMV, (memaddr)readyQueue[turn], 0, 0);
 		//setTIMER(100000UL);
 		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 		//tprint("test\n");
