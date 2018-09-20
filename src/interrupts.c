@@ -143,6 +143,7 @@ void sendACK(devreg_t* device, int type, int index){
 	}
 	currentPCB->p_s.a2 = (unsigned int)&semDev[index];
 	semv();
+	softBlock -= 1;
 }
 
 void pseudo_clock(){

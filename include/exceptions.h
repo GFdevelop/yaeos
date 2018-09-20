@@ -29,7 +29,7 @@ void semp();
 int spechdl();
 void gettime();
 void waitclock();
-unsigned int iodevop();
+void iodevop();
 void getpids();
 void waitchld();
 

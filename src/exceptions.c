@@ -90,60 +90,72 @@ int createprocess(){
 }
 
 int terminateprocess(){
-	pcb_t *head, *tmp;
+    pcb_t *head, *tmp;
 
-	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
-	else head = (pcb_t *)currentPCB->p_s.a2;
-	tmp = head;
-	while (tmp != NULL){	// TODO: all :)
-		if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
-		else {
-			if (tmp != head) {
-				tmp = tmp->p_parent;
-				removeChild(tmp);
-				if (headBlocked((int *)&(tmp->p_first_child))) {
-					freePcb(removeBlocked((int *)&(tmp->p_first_child)));
-					softBlock -= 1;
-				}
-				else if (tmp->p_first_child != currentPCB) freePcb(outProcQ(&readyQueue,tmp->p_first_child));
-				else freePcb(tmp->p_first_child);
-				processCount -= 1;
-			}
-			else tmp = NULL;
-		}
-	}
-	if (head != currentPCB) {	// currentPCB isn't blocked and isn't in readyQueue then we skip this
-		if (headBlocked(head->p_semKey)) {	// if head is blocked we don't remove it from readyQueue
-			outChildBlocked(head);
-			softBlock -= 1;
-		}
-		else outProcQ(&readyQueue,head);	// if head is not blocked remove it
-	}
+    if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
+    else head = (pcb_t *)currentPCB->p_s.a2;
+    tmp = head;
+    while (tmp != NULL){    // TODO: all :)
+        if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
+        else {
+            if (tmp != head) {
+                tmp = tmp->p_parent;
+                removeChild(tmp);
+                if (headBlocked((int *)&(tmp->p_first_child))) {
+                    freePcb(removeBlocked((int *)&(tmp->p_first_child)));
+                    softBlock -= 1;
+                }
+                else if (tmp->p_first_child != currentPCB) freePcb(outProcQ(&readyQueue,tmp->p_first_child));
+                else freePcb(tmp->p_first_child);
+                processCount -= 1;
+            }
+            else tmp = NULL;
+        }
+    }
+    if (head != currentPCB) {   // currentPCB isn't blocked and isn't in readyQueue then we skip this
+        if (head->p_semKey != NULL) {  // if head is blocked we don't remove it from readyQueue
+            outChildBlocked(head);
+            softBlock -= 1;
+        }
+        outProcQ(&readyQueue,head);    // if head is not blocked remove it
+    }
 
-	if (headBlocked((int *)head->p_parent)) {	// if parent of head is in WAITCHILD then we unlock it
-		removeBlocked((int *)head->p_parent);
-		softBlock -= 1;
-		insertProcQ(&readyQueue, head->p_parent);
-	}
+    if (head->p_parent->p_semKey != NULL) {   // if parent of head is in WAITCHILD then we unlock it
+        outChildBlocked(head->p_parent);
+        softBlock -= 1;
+        insertProcQ(&readyQueue, head->p_parent);
+    }
 
-	outChild(head);
-	freePcb(head);
-	processCount -= 1;
-	return 0;
+    outChild(head);
+    freePcb(head);
+    processCount -= 1;
+    return 0;
+}
+
+pcb_t * findNext(int *value){
+    pcb_t *next = removeBlocked(value);
+    if (next != NULL) {
+        if (next->p_semKey != value) {
+            pcb_t *tmp = next;
+            next = findNext(value);
+            insertBlocked(tmp->p_semKey, tmp);
+        }
+    }
+    return next;
 }
 
 void semv(){
     int *value = (int *)currentPCB->p_s.a2;
     if(headBlocked(value) != NULL) {
-        softBlock -= 1;
-        insertProcQ(&readyQueue, removeBlocked(value));
+
+        insertProcQ(&readyQueue, findNext(value));
     }
     if(*value <= 1) *value += 1; //Non va bene
 }
 
 void semp(){
     int *value = (int *)currentPCB->p_s.a2;
-    if (((*value) <= 0) || ((value >= semDev) && (value <= &semDev[MAX_DEVICES]))){
+    if (((*value) <= 0) || ((value >= semDev) && (value < &semDev[MAX_DEVICES]))){
         insertBlocked(value, currentPCB);
         softBlock += 1;
         currentPCB = NULL;
@@ -174,7 +186,7 @@ void waitclock(){
 	semp();
 }
 
-unsigned int iodevop(){
+void iodevop(){
 	unsigned int subdev_no, device = currentPCB->p_s.a3;
 	unsigned int command = currentPCB->p_s.a2;
 
@@ -188,13 +200,8 @@ unsigned int iodevop(){
 	} else {
 		int a = instanceNo(LINE_NO((unsigned int)genericDev));
 		unsigned int terminalReading = ((LINE_NO((unsigned int)genericDev)+1) == INT_TERMINAL && a >> 31) ? N_DEV_PER_IL : 0;
-		if (terminalReading > 0 /*se il semaforo è in lettura*/){
-			//debuggerI();
-			genericDev->term.recv_command = command;
-		} else /*scrittura*/{
-			//debuggerO();
-			genericDev->term.transm_command = command;
-		}
+		if (terminalReading > 0 /*se il semaforo è in lettura*/){ genericDev->term.recv_command = command;}
+		else /*scrittura*/{ genericDev->term.transm_command = command;}
 	}
 }
 
@@ -215,9 +222,18 @@ void getpids(){
 }
 
 void waitchld(){
+	//tprint("waitchild\n");
+	extern unsigned int softBlock;
+	extern pcb_t *currentPCB;
+	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
+		//~ tprint("wait terminatechild\n");
+		//~ currentPCB->p_s.pc -= WORD_SIZE;
+		currentPCB = NULL;
+	}
+	/*
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
 		softBlock += 1;
 		insertBlocked((int *)currentPCB, currentPCB);
-		currentPCB = NULL;
-	}
+		currentPCB->p_s.pc -= WORD_SIZE;
+	}*/
 }
