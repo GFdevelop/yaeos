@@ -122,7 +122,8 @@ unsigned int instanceNo(unsigned int device){
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
 void sendACK(termreg_t* device, int type, int index){
 	extern pcb_t *currentPCB, *readyQueue;
-	extern int semDev[MAX_DEVICES], softBlock;
+	extern int semDev[MAX_DEVICES];
+	extern unsigned int softBlock;
 
 	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 	//if(firstBlocked == NULL) WAIT();

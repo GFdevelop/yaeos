@@ -53,9 +53,8 @@
 
 
 pcb_t *readyQueue, *currentPCB;
-int processCount, softBlock;
+unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
-int pcbSem[MAXPROC];
 
 
 void newArea(memaddr address, void handler()){

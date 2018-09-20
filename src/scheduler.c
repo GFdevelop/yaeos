@@ -21,7 +21,7 @@ void debugger(){};
 
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
-	extern int processCount, softBlock;
+	extern unsigned int processCount, softBlock;
 	
 	if (processCount){
 		if (currentPCB == NULL) {

@@ -23,7 +23,7 @@
 int createprocess(){
 	tprint("createprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
-	extern int processCount;
+	extern unsigned int processCount;
 	pcb_t *childPCB = allocPcb();
 	if (childPCB == NULL) return -1;
 	else {
@@ -41,7 +41,7 @@ int terminateprocess(){
 	tprint("terminateprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	pcb_t *head, *tmp;
-	extern int processCount, softBlock;
+	extern unsigned int processCount, softBlock;
 	
 	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
 	else head = (pcb_t *)currentPCB->p_s.a2;
@@ -95,18 +95,6 @@ int terminateprocess(){
 	return 0;
 }
 
-//~ pcb_t * findNext(int *value){
-	//~ pcb_t *next = removeBlocked(value);
-	//~ if (next != NULL) {
-		//~ if (next->p_semKey != value) {
-			//~ pcb_t *tmp = next;
-			//~ next = findNext(value);
-			//~ insertBlocked(tmp->p_semKey, tmp);
-		//~ }
-	//~ }
-	//~ return next;
-//~ }
-
 void semv(){
 	//~ tprint("semv\n");
 	extern pcb_t *currentPCB, *readyQueue;
@@ -117,7 +105,6 @@ void semv(){
 		tmp->p_semKey = NULL;
 		insertProcQ(&readyQueue, tmp);
 		(*value)++;
-		//~ insertProcQ(&readyQueue, findNext(value));
 	}
 }
 
@@ -163,7 +150,7 @@ void iodevop(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	unsigned int subdev_no = 0;
-	extern int softBlock;
+	extern unsigned int softBlock;
 	termreg_t *term = (termreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
 	// TODO: device
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
@@ -199,7 +186,7 @@ void getpids(){
 
 void waitchild(){
 	tprint("waitchild\n");
-	extern int softBlock;
+	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
 		//~ tprint("wait terminatechild\n");
