@@ -55,6 +55,7 @@
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
+cpu_t slice, tick, interval;
 
 
 void newArea(memaddr address, void handler()){
@@ -84,6 +85,8 @@ int main() {
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
+	slice = getTODLO();
+	tick = getTODLO();
 	
 	//~ tprint("init semaphores\n");
 	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=0;

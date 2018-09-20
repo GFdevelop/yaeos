@@ -46,8 +46,35 @@ void intHandler(){
 	scheduler();
 }
 
+void ticker(pcb_t *removed, void *nil){
+	extern pcb_t *readyQueue;
+	extern unsigned int softBlock;
+	extern int semDev[MAX_DEVICES];
+	
+	outChild(removed);
+	removed->p_semKey = NULL;
+	insertProcQ(&readyQueue, removed);
+	softBlock--;
+	semDev[CLOCK_SEM]++;
+}
+
 void timer_HDL(){
-	tprint("timer_HDL\n");
+	//~ tprint("timer_HDL\n");
+	extern pcb_t *currentPCB, *readyQueue;
+	extern int semDev[MAX_DEVICES];
+	extern cpu_t slice, tick;
+	
+	if (getTODLO() >= (slice + SLICE_TIME)){
+		//~ tprint("slice\n");
+		insertProcQ(&readyQueue, currentPCB);
+		currentPCB = NULL;
+		//~ slice = getTODLO();
+	}
+	if (getTODLO() >= (tick + TICK_TIME)){
+		//~ tprint("tick\n");
+		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
+		//~ tick = getTODLO();
+	}
 }
 
 void device_HDL(){

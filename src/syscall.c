@@ -10,12 +10,14 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
-#include "libuarm.h"
-#include "arch.h"
+#include <libuarm.h>
+#include <arch.h>
+
 #include "pcb.h"
 #include "asl.h"
-#include "syscall.h"
+
 #include "initial.h"
+#include "syscall.h"
 #include "interrupts.h"
 #include "scheduler.h"
 
@@ -40,8 +42,8 @@ int createprocess(){
 int terminateprocess(){
 	tprint("terminateprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
-	pcb_t *head, *tmp;
-	extern unsigned int processCount, softBlock;
+	pcb_t *head/*, *tmp*/;
+	extern unsigned int processCount/*, softBlock*/;
 	
 	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
 	else head = (pcb_t *)currentPCB->p_s.a2;
@@ -142,7 +144,14 @@ void gettime(){
 void waitclock(){
 	tprint("waitclock\n");
 	extern pcb_t *currentPCB;
-	//~ SYSCALL(SEMP, (memaddr)currentPCB, 0, 0);
+	extern int semDev[MAX_DEVICES];
+	extern unsigned int softBlock;
+	
+	//semp
+	semDev[CLOCK_SEM]--;
+	insertBlocked(&semDev[CLOCK_SEM], currentPCB);
+	softBlock += 1;
+	currentPCB = NULL;
 }
 
 void iodevop(){
@@ -160,7 +169,7 @@ void iodevop(){
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
 	
-	term->transm_command = currentPCB->p_s.a2;	// currentPCB->p_s.a2 is changed for the semp()
+	term->transm_command = currentPCB->p_s.a2;
 	
 	//semp
 	currentPCB = NULL;
