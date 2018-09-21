@@ -51,7 +51,7 @@ void ticker(pcb_t *removed, void *nil){
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
 	
-	outChild(removed);
+	removeBlocked(removed);
 	removed->p_semKey = NULL;
 	insertProcQ(&readyQueue, removed);
 	softBlock--;
@@ -62,19 +62,22 @@ void timer_HDL(){
 	//~ tprint("timer_HDL\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t slice, tick;
+	extern cpu_t slice, tick, interval;
 	
 	if (getTODLO() >= (slice + SLICE_TIME)){
-		//~ tprint("slice\n");
+		tprint("slice\n");
 		insertProcQ(&readyQueue, currentPCB);
 		currentPCB = NULL;
-		//~ slice = getTODLO();
+		slice = getTODLO();
 	}
 	if (getTODLO() >= (tick + TICK_TIME)){
-		//~ tprint("tick\n");
+		tprint("tick\n");
 		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
-		//~ tick = getTODLO();
+		tick = getTODLO();
 	}
+	
+	interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
+	//~ setTIMER(interval - getTODLO());
 }
 
 void device_HDL(){

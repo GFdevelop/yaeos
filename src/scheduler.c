@@ -29,16 +29,16 @@ void scheduler(){
 			if (readyQueue != NULL) currentPCB = removeProcQ(&readyQueue);
 			else if (softBlock) {
 				//~ tprint("wait scheduler\n");
+				
 				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 				WAIT();
 			}
 			else PANIC();
 		}
 		
-		//~ if (currentPCB->activation_time == 0) currentPCB->activation_time = getTODLO();	// TODO: freePCB reset time
-		interval = getTODLO() - MIN(slice + SLICE_TIME, tick + TICK_TIME);
-		//~ interval = interval - getTODLO();
-		setTIMER(interval);
+		interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
+		if (interval > getTODLO()) setTIMER(interval - getTODLO());
+		//~ else setTIMER(0);
 		
 		LDST(&currentPCB->p_s);
 		

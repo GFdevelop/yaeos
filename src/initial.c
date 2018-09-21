@@ -85,8 +85,6 @@ int main() {
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
-	slice = getTODLO();
-	tick = getTODLO();
 	
 	//~ tprint("init semaphores\n");
 	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=0;
@@ -103,6 +101,9 @@ int main() {
 	insertProcQ(&readyQueue, currentPCB);
 	
 	//~ tprint("call scheduler\n");
+	slice = getTODLO();
+	tick = slice;
+	interval = slice + SLICE_TIME;
 	scheduler();
 	
 	return 0;
