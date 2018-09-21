@@ -34,6 +34,24 @@ void INT_handler(){
 }
 
 void timer_HDL(){
+	if(isAging){
+		tprint("Aging");
+		isAging = 0;
+		forallProcQ(readyQueue, ager, NULL);
+		lastAging = getTODLO();
+		aging_times += 1;
+		if(aging_times >= 10){
+			tprint("Pseudo");
+			forallBlocked(&semDev[CLOCK_SEM], pseudo_clock, NULL);
+			aging_times = 0;
+		}
+	}else{
+		insertProcQ(&readyQueue, currentPCB);
+		currentPCB = NULL;
+	}
+}
+/*
+void timer_HDL(){
 
 	if(isPseudo || (getTODLO() - lastPseudo >= PSEUDO_TIME)){
 		isPseudo = 0;
@@ -49,7 +67,7 @@ void timer_HDL(){
 		insertProcQ(&readyQueue, currentPCB);
 		currentPCB = NULL;
 	}
-}
+}*/
 
 void device_HDL(unsigned int device){
 	return;
@@ -119,7 +137,7 @@ unsigned int instanceNo(int device){
 
 void debuggt(){};
 void debuggg(){};
-void debuggr() {}
+void debuggr(){};
 //Send the ACK signal and copy the device status to the appropriate fields based on type value
 //Then, free the busy device
 void sendACK(devreg_t* device, int type, int index){
@@ -143,7 +161,6 @@ void sendACK(devreg_t* device, int type, int index){
 	}
 	currentPCB->p_s.a2 = (unsigned int)&semDev[index];
 	semv();
-	softBlock -= 1;
 }
 
 void pseudo_clock(){

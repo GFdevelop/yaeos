@@ -12,13 +12,14 @@
 int main(int argc, char const *argv[]){
 
 	int i;
+	aging_times = 0;
 
 	//1. NEWAREAs init
 	newArea(INT_NEWAREA, INT_handler);
 	newArea(TLB_NEWAREA, TLB_handler);
 	newArea(PGMTRAP_NEWAREA, PGMT_handler);
 	newArea(SYSBK_NEWAREA, SYSBK_handler);
-	
+
 	//2. Phase1's structures init
 	initPcbs();
 	initASL();
@@ -30,7 +31,7 @@ int main(int argc, char const *argv[]){
 	readyQueue = NULL;
 
 	//4. Nucleus' semaphores init
-	for(i = 0; i < CLOCK_SEM; i++) semDev[i] = 1;
+	for(i = 0; i < CLOCK_SEM; i++) semDev[i] = 0;
 	semDev[CLOCK_SEM] = 0;
 
 	//5. First process' PCB
@@ -42,14 +43,14 @@ int main(int argc, char const *argv[]){
 	first->p_s.sp = RAM_TOP - FRAMESIZE;
 	first->p_s.pc = (memaddr)test;
 	insertProcQ(&readyQueue, first);
-	
+
 	//6. Scheduler's vars initialization and call to scheduler
 	lastPseudo = getTODLO();
 	lastAging = getTODLO();
 	isAging = 0;
 	isPseudo = 0;
 	scheduler();
-	
+
 	PANIC();
 }
 

@@ -68,11 +68,16 @@ memaddr get_stack_area(void) {
 	return ret_value;
 }
 
-
+void debuggerp11(){};
+void debuggerp12(){};
+void debuggerp13(){};
 void p1(void) {
 	SYSCALL(GETPIDS, (memaddr)&p1p1addr, (memaddr)&p1p0addr, 0);
+	debuggerp11();
 	SYSCALL(SEMV, (memaddr)&p1sem, 0, 0);
+	debuggerp12();
 	SYSCALL(SEMP, (memaddr)&p1sem, 0, 0);
+	debuggerp13();
 
 	SYSCALL(SEMV, (memaddr)&p1ok, 0, 0);
 	SYSCALL(SEMP, (memaddr)&p1sem, 0, 0);
@@ -80,9 +85,15 @@ void p1(void) {
 	PANIC();
 }
 
+void debuggerp1a1(){};
+void debuggerp1a2(){};
+void debuggerp1a3(){};
 void p1a(void) {
+	debuggerp1a1();
 	SYSCALL(SEMV, (memaddr)&p1ok, 0, 0);
+	debuggerp1a2();
 	SYSCALL(SEMP, (memaddr)&p1sem, 0, 0);
+	debuggerp1a3();
 	print("p1: Test of interleaved prints\n");
 	SYSCALL(TERMINATEPROCESS, (memaddr)NULL, 0, 0);
 	print("P1 survived a terminate process syscall\n");
@@ -236,7 +247,7 @@ void p4b(void) {
 		PANIC();
 	}
 	SYSCALL(TERMINATEPROCESS, 0, 0, 0);
-	
+
 	print("P4b survived a terminate process syscall\n");
 	PANIC();
 }
@@ -334,6 +345,12 @@ void p7(void) {
 	SYSCALL(TERMINATEPROCESS, 0, 0, 0);
 }
 
+void debuggP2p0(){};
+void debuggP2p1(){};
+void debuggP2p2(){};
+void debuggP2p3(){};
+void debuggP2p4(){};
+
 void test(void) {
 	void *p1addr, *p0addr, *p0paddr;
 	STST(&p1state);
@@ -374,8 +391,9 @@ void test(void) {
 		print("GETPIDS: wrong ppid of root process\n");
 		PANIC();
 	}
-
+	debuggP2p0();
 	SYSCALL(SEMP, (memaddr)&p1ok, 0, 0);
+	debuggP2p1();
 	if (p1p0addr != p0addr) {
 		print("GETPIDS: wrong ppid of p1 process\n");
 		PANIC();
@@ -389,8 +407,11 @@ void test(void) {
 	SYSCALL(WAITCHLD, 0, 0, 0);
 	p1state.pc = (memaddr) p1a;
 	SYSCALL(CREATEPROCESS, (memaddr)&p1state, 10, (memaddr)&p1addr);
+	debuggP2p2();
 	SYSCALL(SEMP, (memaddr)&p1ok, 0, 0);
+	debuggP2p3();
 	SYSCALL(SEMV, (memaddr)&p1sem, 0, 0);
+	debuggP2p4();
 	print("p0: Test of interleaved prints\n");
 	SYSCALL(WAITCHLD, 0, 0, 0);
 

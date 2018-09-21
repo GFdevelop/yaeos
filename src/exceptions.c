@@ -90,6 +90,23 @@ int createprocess(){
 }
 
 int terminateprocess(){
+	//tprint("terminateprocess\n");
+	extern pcb_t *currentPCB, *readyQueue;
+	pcb_t *head, *tmp;
+	extern unsigned int processCount, softBlock;
+
+	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
+	else head = (pcb_t *)currentPCB->p_s.a2;
+
+	if (head == currentPCB) currentPCB = NULL;
+
+	outChild(head);
+	freePcb(head);
+	processCount--;
+	return 0;
+}
+/*
+int terminateprocess(){
     pcb_t *head, *tmp;
 
     if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
@@ -130,7 +147,7 @@ int terminateprocess(){
     freePcb(head);
     processCount -= 1;
     return 0;
-}
+}*/
 
 pcb_t * findNext(int *value){
     pcb_t *next = removeBlocked(value);
@@ -144,20 +161,45 @@ pcb_t * findNext(int *value){
     return next;
 }
 
-void semv(){
-    int *value = (int *)currentPCB->p_s.a2;
-    if(headBlocked(value) != NULL) {
+void printint_(int a){
+	int b = a%10;
+    a = a/10;
+    if (a>0) printint_(a);
+    if (b==0) {tprint("0");} else if (b==1) {tprint("1");}
+    else if (b==2) {tprint("2");} else if (b==3) {tprint("3");}
+    else if (b==4) {tprint("4");} else if (b==5) {tprint("5");}
+    else if (b==6) {tprint("6");} else if (b==7) {tprint("7");}
+    else if (b==8) {tprint("8");} else if (b==9) {tprint("9");}
+}
+void printint(int a){
+	if (a<0) {tprint("-"); a = -a;}
+    printint_(a);
+	tprint("\n");
+}
 
-        insertProcQ(&readyQueue, findNext(value));
+void debuggerSemv(){};
+void debuggerSemp(){};
+
+void semv(){
+	debuggerSemv();
+    int *value = (int *)currentPCB->p_s.a2;
+	extern unsigned int softBlock;
+    if(headBlocked(value) != NULL) {
+        pcb_t *tmp = removeBlocked(value);
+        tmp->p_semKey = NULL;
+        if ((value >= semDev) && (value <= &semDev[MAX_DEVICES])) softBlock -= 1;
+        insertProcQ(&readyQueue, tmp);
     }
-    if(*value <= 1) *value += 1; //Non va bene
+    if(headBlocked(value) == NULL) *value += 1; //Non va bene
 }
 
 void semp(){
+	debuggerSemp();
+	extern unsigned int softBlock;
     int *value = (int *)currentPCB->p_s.a2;
     if (((*value) <= 0) || ((value >= semDev) && (value < &semDev[MAX_DEVICES]))){
         insertBlocked(value, currentPCB);
-        softBlock += 1;
+        if ((value >= semDev) && (value <= &semDev[MAX_DEVICES])) softBlock += 1;
         currentPCB = NULL;
     }else *value -= 1;
 }
@@ -185,8 +227,10 @@ void waitclock(){
 	currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
 	semp();
 }
+void debuggerio(){};
 
 void iodevop(){
+	debuggerio();
 	unsigned int subdev_no, device = currentPCB->p_s.a3;
 	unsigned int command = currentPCB->p_s.a2;
 
