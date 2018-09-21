@@ -53,11 +53,12 @@
 
 
 pcb_t *readyQueue, *currentPCB;
-int processCount, softBlockCount;
+unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
+cpu_t slice, tick, interval;
 
 
-void newArea(unsigned int address, void handler()){
+void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;
@@ -83,10 +84,12 @@ int main() {
 	readyQueue = NULL;
 	currentPCB = NULL;
 	processCount = 1;
-	softBlockCount = 0;
+	softBlock = 0;
+	slice = getTODLO();
+	tick = getTODLO();
 	
 	//~ tprint("init semaphores\n");
-	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=1;
+	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=0;
 	
 	//~ tprint("create first pcb\n");
 	currentPCB = allocPcb();

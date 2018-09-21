@@ -14,7 +14,7 @@ typedef unsigned int memaddr;
 typedef unsigned int cpu_t;
 
 extern void test();
-void newArea(unsigned int address, void handler());
+void newArea(memaddr address, void handler());
 
 
 #endif

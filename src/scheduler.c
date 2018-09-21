@@ -21,28 +21,28 @@ void debugger(){};
 
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
-	extern int processCount, softBlockCount;
+	extern unsigned int processCount, softBlock;
+	extern cpu_t slice, tick, interval;
 	
 	if (processCount){
 		if (currentPCB == NULL) {
-			if (readyQueue != NULL) {
-				currentPCB = removeProcQ(&readyQueue);
+			if (readyQueue != NULL) currentPCB = removeProcQ(&readyQueue);
+			else if (softBlock) {
+				//~ tprint("wait scheduler\n");
+				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
+				WAIT();
 			}
-			else {
-				if (softBlockCount) {
-					//~ tprint("wait scheduler\n");
-					setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
-					WAIT();
-				}
-				else PANIC();
-			}
+			else PANIC();
 		}
+		
+		//~ if (currentPCB->activation_time == 0) currentPCB->activation_time = getTODLO();	// TODO: freePCB reset time
+		interval = getTODLO() - MIN(slice + SLICE_TIME, tick + TICK_TIME);
+		//~ interval = interval - getTODLO();
+		setTIMER(interval);
+		
 		LDST(&currentPCB->p_s);
 		
-		//SYSCALL(SEMV, (unsigned int)readyQueue[turn], 0, 0);
-		//setTIMER(100000UL);
 		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
-		//tprint("test\n");
 	}
 	tprint("no process count\n");
 	HALT();
