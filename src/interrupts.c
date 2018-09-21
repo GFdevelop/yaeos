@@ -25,8 +25,8 @@ void intHandler(){
 	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
 	
-	if (currentPCB) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
+	if (currentPCB != NULL) {
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
 	}
 
@@ -51,7 +51,7 @@ void ticker(pcb_t *removed, void *nil){
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
 	
-	removeBlocked(removed);
+	removeBlocked(&semDev[CLOCK_SEM]);
 	removed->p_semKey = NULL;
 	insertProcQ(&readyQueue, removed);
 	softBlock--;
@@ -65,19 +65,22 @@ void timer_HDL(){
 	extern cpu_t slice, tick, interval;
 	
 	if (getTODLO() >= (slice + SLICE_TIME)){
-		tprint("slice\n");
-		insertProcQ(&readyQueue, currentPCB);
-		currentPCB = NULL;
+		//~ tprint("|");
+		if (headProcQ(readyQueue) != NULL) {		// if readyQueue is empty we continue with current process
+			//~ tprint("/");
+			insertProcQ(&readyQueue, currentPCB);
+			currentPCB = NULL;
+		}
 		slice = getTODLO();
 	}
 	if (getTODLO() >= (tick + TICK_TIME)){
-		tprint("tick\n");
+		//~ tprint("?");
 		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
 		tick = getTODLO();
 	}
 	
 	interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
-	//~ setTIMER(interval - getTODLO());
+	setTIMER(interval - getTODLO());
 }
 
 void device_HDL(){
@@ -88,8 +91,6 @@ void terminal_HDL(){
 	//~ tprint ("terminal_HDL\n");
 	termreg_t *term;
 	unsigned int terminal_no = 0;
-	//~ extern pcb_t *currentPCB;
-	//~ extern int semDev[MAX_DEVICES];
 
 	terminal_no = instanceNo(INT_TERMINAL);
 	
@@ -101,11 +102,6 @@ void terminal_HDL(){
 	}else if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
 		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
 	}
-	
-	//~ if (semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no] < 1){
-		//~ currentPCB->p_s.a2 = (memaddr)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + terminal_no];
-		//~ semv();
-	//~ }
 }
 
 void SVST(state_t *A, state_t *B){
@@ -151,7 +147,7 @@ unsigned int instanceNo(unsigned int device){
 
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
 void sendACK(termreg_t* device, int type, int index){
-	extern pcb_t *currentPCB, *readyQueue;
+	extern pcb_t *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
 
@@ -169,8 +165,8 @@ void sendACK(termreg_t* device, int type, int index){
 	}
 	
 	//semv
-	semDev[index]++;
 	firstBlocked->p_semKey = NULL;
 	insertProcQ(&readyQueue, firstBlocked);
 	softBlock--;
+	semDev[index]++;
 }

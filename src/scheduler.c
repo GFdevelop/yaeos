@@ -22,11 +22,14 @@ void debugger(){};
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	extern cpu_t slice, tick, interval;
+	//~ extern cpu_t slice, tick, interval;
 	
 	if (processCount){
 		if (currentPCB == NULL) {
-			if (readyQueue != NULL) currentPCB = removeProcQ(&readyQueue);
+			if (readyQueue != NULL) {
+				currentPCB = removeProcQ(&readyQueue);
+				//~ setTIMER(SLICE_TIME);
+			}
 			else if (softBlock) {
 				//~ tprint("wait scheduler\n");
 				
@@ -36,8 +39,8 @@ void scheduler(){
 			else PANIC();
 		}
 		
-		interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
-		if (interval > getTODLO()) setTIMER(interval - getTODLO());
+		//~ interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
+		//~ if (interval > getTODLO()) setTIMER(interval - getTODLO());
 		//~ else setTIMER(0);
 		
 		LDST(&currentPCB->p_s);
