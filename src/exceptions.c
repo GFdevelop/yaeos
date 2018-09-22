@@ -32,10 +32,10 @@ void sysbkHandler(){
 	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
 	
-	//~ if (currentPCB) {
+	if (currentPCB) {
 		//~ ((state_t *)SYSBK_OLDAREA)->pc -= 2*WORD_SIZE;
 		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
-	//~ }
+	}
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
 		case(CREATEPROCESS):

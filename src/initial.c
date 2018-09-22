@@ -104,6 +104,7 @@ int main() {
 	slice = getTODLO();
 	tick = slice;
 	interval = slice + SLICE_TIME;
+	setTIMER(SLICE_TIME);
 	scheduler();
 	
 	return 0;

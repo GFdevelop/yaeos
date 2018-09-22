@@ -59,9 +59,9 @@ void print(char *msg) {
 
 memaddr get_stack_area(void) {
 	memaddr ret_value;
-	tprint("t1\n");
+	tprint("test1\n");
 	SYSCALL(SEMP, (memaddr)&stack_mutex, 0, 0);
-	tprint("t2\n");
+	tprint("test2\n");
 	ret_value = next_stack;
 	next_stack -= QPAGE;
 	SYSCALL(SEMV, (memaddr)&stack_mutex, 0, 0);
