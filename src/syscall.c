@@ -44,12 +44,12 @@ int terminateprocess(){
 	extern pcb_t *currentPCB, *readyQueue;
 	pcb_t *head/*, *tmp*/;
 	extern unsigned int processCount/*, softBlock*/;
-	
+
 	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
 	else head = (pcb_t *)currentPCB->p_s.a2;
-	
+
 	if (head == currentPCB) currentPCB = NULL;
-	
+
 	//~ tmp = head;
 	//~ while (tmp != NULL){	// TODO: all :)
 		//~ if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
@@ -82,7 +82,7 @@ int terminateprocess(){
 	//~ //	else outProcQ(&readyQueue,head);	// if head is not blocked remove it
 	//~ }
 	//~ else currentPCB = NULL;
-	
+
 	//~ if (headBlocked(head->p_semKey)) {	// if parent of head is in WAITCHILD then we unlock it
 	//	outChildBlocked(head->p_parent);
 	//~ tprint("head\n");
@@ -90,7 +90,7 @@ int terminateprocess(){
 		//~ insertProcQ(&readyQueue, head->p_parent);
 		//~ softBlock--;
 	//~ }
-	
+
 	outChild(head);
 	freePcb(head);
 	processCount--;
@@ -137,7 +137,7 @@ int spechdl(){
 
 void gettime(){
 	tprint("gettime\n");
-	
+
 }
 
 
@@ -146,7 +146,7 @@ void waitclock(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
-	
+
 	//semp
 	semDev[CLOCK_SEM]--;
 	insertBlocked(&semDev[CLOCK_SEM], currentPCB);
@@ -160,17 +160,28 @@ void iodevop(){
 	extern int semDev[MAX_DEVICES];
 	unsigned int subdev_no = 0;
 	extern unsigned int softBlock;
-	termreg_t *term = (termreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
+	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
 	// TODO: device
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
-	
+
 	//semp
 	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no]--;
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
-	
-	term->transm_command = currentPCB->p_s.a2;
-	
+	if (LINENO((unsigned int)genericDev)+1 != INT_TERMINAL /*se non è un terminale*/){
+		genericDev->dtp.command = currentPCB->p_s.a2;
+ 	} else {
+ 		int a = instanceNo(LINENO((unsigned int)genericDev));
+ 		unsigned int terminalReading = ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL && a >> 31) ? N_DEV_PER_IL : 0;
+ 		if (terminalReading > 0 /*se il semaforo è in lettura*/){
+ 			//debuggerI();
+ 			genericDev->term.recv_command = currentPCB->p_s.a2;
+ 		} else /*scrittura*/{
+ 			//debuggerO();
+ 			genericDev->term.transm_command = currentPCB->p_s.a2;
+ 		}
+ 	}
+
 	//semp
 	currentPCB = NULL;
 }

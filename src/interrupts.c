@@ -24,7 +24,7 @@ void intHandler(){
 	//~ setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
 	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
-	
+
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 	if (currentPCB != NULL) {
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
@@ -40,7 +40,7 @@ void intHandler(){
 	else if(CAUSE_IP_GET(cause, INT_PRINTER)) device_HDL(INT_PRINTER);
 	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) terminal_HDL();
 	else PANIC();
-	
+
 	//~ tprint("end\n");
 	//~ if (currentPCB) LDST((state_t *)INT_OLDAREA);
 	scheduler();
@@ -50,7 +50,7 @@ void ticker(pcb_t *removed, void *nil){
 	extern pcb_t *readyQueue;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
-	
+
 	removeBlocked(&semDev[CLOCK_SEM]);
 	removed->p_semKey = NULL;
 	insertProcQ(&readyQueue, removed);
@@ -63,7 +63,7 @@ void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern cpu_t slice, tick, interval;
-	
+
 	if (getTODLO() >= (slice + SLICE_TIME)){
 		//~ tprint("|");
 		if (headProcQ(readyQueue) != NULL) {		// if readyQueue is empty we continue with current process
@@ -78,7 +78,7 @@ void timer_HDL(){
 		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
 		tick = getTODLO();
 	}
-	
+
 	interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
 	setTIMER(interval - getTODLO());
 }
@@ -89,19 +89,21 @@ void device_HDL(){
 
 void terminal_HDL(){
 	//~ tprint ("terminal_HDL\n");
-	termreg_t *term;
+	devreg_t *generic;
 	unsigned int terminal_no = 0;
 
 	terminal_no = instanceNo(INT_TERMINAL);
-	
+
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
-	term = (termreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
-	
-	if((term->transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
-	}else if((term->recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
-	}
+	generic = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+
+	if ((generic->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		sendACK(generic, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
+	} else if ((generic->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		sendACK(generic, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+	} else {
+ 		sendACK(generic, GENERIC, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+ 	}
 }
 
 void SVST(state_t *A, state_t *B){
@@ -132,7 +134,7 @@ void SVST(state_t *A, state_t *B){
 unsigned int instanceNo(unsigned int device){
 	memaddr *line;
 	unsigned int subdev_no = 0;
-	
+
 	//1. Determinare quale dei teminali ha generato l'interrupt
 	line = (memaddr *)IDEV_BITMAP_ADDR(device);
 	while(*line > 0){
@@ -140,13 +142,13 @@ unsigned int instanceNo(unsigned int device){
 		else{
 			subdev_no++;
 			*line = *line >> 1;
-		}	
+		}
 	}
 	return subdev_no;
 }
 
-//Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
-void sendACK(termreg_t* device, int type, int index){
+//Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type
+void sendACK(devreg_t* device, int type, int index){
 	extern pcb_t *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
@@ -155,15 +157,19 @@ void sendACK(termreg_t* device, int type, int index){
 	//if(firstBlocked == NULL) WAIT();
 	switch (type) {
 		case TRANSM:
-			firstBlocked->p_s.a1 = device->transm_status;
-			device->transm_command = DEV_C_ACK;
+			firstBlocked->p_s.a1 = device->term.transm_status;
+			device->term.transm_command = DEV_C_ACK;
 			break;
 		case RECV:
-			firstBlocked->p_s.a1 = device->recv_status;
-			device->recv_command = DEV_C_ACK;
+			firstBlocked->p_s.a1 = device->term.recv_status;
+			device->term.recv_command = DEV_C_ACK;
 			break;
+		case GENERIC:
+ 			firstBlocked->p_s.a1 = device->dtp.status;
+ 			device->dtp.command = DEV_C_ACK;
+ 			break;
 	}
-	
+
 	//semv
 	firstBlocked->p_semKey = NULL;
 	insertProcQ(&readyQueue, firstBlocked);
