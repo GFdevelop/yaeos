@@ -39,10 +39,10 @@ void sysbkHandler(){
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
 		case(CREATEPROCESS):
-			createprocess();
+			currentPCB->p_s.a1 = createprocess();
 			break;
 		case(TERMINATEPROCESS):
-			terminateprocess();
+			currentPCB->p_s.a1 = terminateprocess();
 			break;
 		case(SEMV):
 			semv(((state_t *)SYSBK_OLDAREA)->a2);

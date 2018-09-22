@@ -25,8 +25,8 @@ void intHandler(){
 	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
 	
-		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 	if (currentPCB != NULL) {
+		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
 	}
 
@@ -46,16 +46,47 @@ void intHandler(){
 	scheduler();
 }
 
+int pending() {
+	unsigned int cause = getCAUSE();
+	if(CAUSE_IP_GET(cause, INT_LOWEST)) {
+		device_HDL(INT_LOWEST);
+		return 1;
+	}
+	else if(CAUSE_IP_GET(cause, INT_DISK)) {
+		device_HDL(INT_DISK);
+		return 1;
+	}
+	else if(CAUSE_IP_GET(cause, INT_TAPE)) {
+		device_HDL(INT_TAPE);
+		return 1;
+	}
+	else if(CAUSE_IP_GET(cause, INT_UNUSED)) {
+		device_HDL(INT_UNUSED);
+		return 1;
+	}
+	else if(CAUSE_IP_GET(cause, INT_PRINTER)) {
+		device_HDL(INT_PRINTER);
+		return 1;
+	}
+	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) {
+		terminal_HDL();
+		return 1;
+	}
+	else return 0;
+}
+
 void ticker(pcb_t *removed, void *nil){
-	extern pcb_t *readyQueue;
+	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
 	
-	removeBlocked(&semDev[CLOCK_SEM]);
+	outChildBlocked(removed);
 	removed->p_semKey = NULL;
 	insertProcQ(&readyQueue, removed);
-	softBlock--;
-	semDev[CLOCK_SEM]++;
+	//~ if (semDev[CLOCK_SEM] < 0) {
+		softBlock--;
+		semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
+	//~ }
 }
 
 void timer_HDL(){
@@ -63,19 +94,27 @@ void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern cpu_t slice, tick, interval;
+	extern unsigned int softBlock;
 	
 	if (getTODLO() >= (slice + SLICE_TIME)){
 		//~ tprint("|");
-		if (headProcQ(readyQueue) != NULL) {		// if readyQueue is empty we continue with current process
-			//~ tprint("/");
-			insertProcQ(&readyQueue, currentPCB);
-			currentPCB = NULL;
-		}
+		insertProcQ(&readyQueue, currentPCB);
+		currentPCB = NULL;
 		slice = getTODLO();
 	}
+	
 	if (getTODLO() >= (tick + TICK_TIME)){
 		//~ tprint("?");
-		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
+		//~ if (currentPCB == NULL) currentPCB = headBlocked(&semDev[CLOCK_SEM]);
+		//~ if (headBlocked(&semDev[CLOCK_SEM])) forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
+		pcb_t *removed;
+		currentPCB = headBlocked(&semDev[CLOCK_SEM]);
+		while ((removed = removeBlocked(&semDev[CLOCK_SEM]))){
+				removed->p_semKey = NULL;
+				insertProcQ(&readyQueue, removed);
+				softBlock--;
+				semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
+		}
 		tick = getTODLO();
 	}
 	
@@ -165,8 +204,10 @@ void sendACK(termreg_t* device, int type, int index){
 	}
 	
 	//semv
-	firstBlocked->p_semKey = NULL;
 	insertProcQ(&readyQueue, firstBlocked);
-	softBlock--;
-	semDev[index]++;
+	firstBlocked->p_semKey = NULL;
+	//~ if (semDev[index] < 0) {
+		softBlock--;
+		semDev[index] = semDev[index] + 1;
+	//~ }
 }
