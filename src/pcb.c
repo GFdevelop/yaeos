@@ -56,6 +56,9 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 		} else if (p->p_priority > (*head)->p_priority){	// if p has major priority of this node then insert
 			p->p_next = *head;
 			*head = p;
+		} else if ((*head)->p_next == NULL) {
+			p->p_next = NULL;
+			(*head)->p_next = p;
 		} else {	// if p has priority <= than this node, try to insert before the next node
 			insertProcQ(&(*head)->p_next, p);
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;	// if node was inserted then link new node
@@ -72,6 +75,7 @@ pcb_t* removeProcQ(pcb_t **head){
 	else {
 		pcb_t * ret = *head;
 		*head = (*head)->p_next;
+		ret->p_next = NULL;
 		return ret;
 	}
 }
@@ -87,8 +91,8 @@ pcb_t* outProcQ(pcb_t **head, pcb_t *p){
 
 void forallProcQ(pcb_t *head, void fun(pcb_t *pcb, void *), void *arg){
 	if (head != NULL){
-		fun(head,arg);
 		forallProcQ(head->p_next, fun, arg);
+		fun(head,arg);
 	}
 }
 
@@ -116,6 +120,7 @@ pcb_t *removeChild(pcb_t *p){
 	else {
 		pcb_t * ret = p->p_first_child;
 		p->p_first_child = ret->p_sib;
+		ret->p_sib = NULL;
 		return ret;
 	}
 }

@@ -56,16 +56,16 @@ pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
 cpu_t slice, tick, interval;
+int semWaitChild;
 
 
 void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;
-	area->cpsr = STATUS_SYS_MODE;
-	area->cpsr = STATUS_ALL_INT_DISABLE(area->cpsr);
+	area->cpsr = STATUS_ALL_INT_DISABLE((area->cpsr) | STATUS_SYS_MODE);
 	//area->cpsr = STATUS_ENABLE_TIMER(area->cpsr);
-	area->CP15_Control = CP15_CONTROL_NULL;
+    area->CP15_Control = (area->CP15_Control) & ~(0x00000001);
 }
 
 
@@ -87,14 +87,14 @@ int main() {
 	softBlock = 0;
 	
 	//~ tprint("init semaphores\n");
-	for (int i=0; i<MAX_DEVICES; i++) semDev[i]=0;
+	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
+	semWaitChild = 0;
 	
 	//~ tprint("create first pcb\n");
 	currentPCB = allocPcb();
-	currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr);
+	currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr) | STATUS_SYS_MODE;
 	currentPCB->p_priority = 0;
-	currentPCB->p_s.CP15_Control = CP15_CONTROL_NULL;
-	currentPCB->p_s.cpsr = STATUS_SYS_MODE;
+	currentPCB->p_s.CP15_Control = (currentPCB->p_s.CP15_Control) & ~(0x00000001);
 	currentPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
 	currentPCB->p_s.pc = (memaddr)test;
 	//currentPCB->p_s.cpsr = STATUS_ENABLE_TIMER(currentPCB->p_s.cpsr);
