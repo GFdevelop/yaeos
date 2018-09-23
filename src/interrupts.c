@@ -94,8 +94,9 @@ void timer_HDL(){
 	extern unsigned int softBlock;
 
 	if (getTODLO() >= (slice + SLICE_TIME)){
-		//~ tprint("|");
+		//tprint("|\n");
 		if (currentPCB){
+			//tprint("*\n");
 			insertProcQ(&readyQueue, currentPCB);
 			currentPCB = NULL;
 		}
@@ -103,10 +104,9 @@ void timer_HDL(){
 	}
 
 	if (getTODLO() >= (tick + TICK_TIME)){
-		//~ tprint("?");
+		//tprint("?\n");
 		//~ if (currentPCB == NULL) currentPCB = headBlocked(&semDev[CLOCK_SEM]);
 		//~ currentPCB = headBlocked(&semDev[CLOCK_SEM]);
-
 		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
 
 		//~ pcb_t *removed = removeBlocked(&semDev[CLOCK_SEM]);
@@ -208,7 +208,7 @@ void sendACK(devreg_t* device, int type, int index){
  			device->dtp.command = DEV_C_ACK;
  			break;
 	}
-	
+
 
 	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 	if (firstBlocked) {

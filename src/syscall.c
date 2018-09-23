@@ -115,7 +115,7 @@ void semp(){
 		//~ tprint("locked\n");
 		if (insertBlocked(value, currentPCB)) PANIC();
 		currentPCB = NULL;
-	}
+	} else if (*value < 1) *value += 1;
 }
 
 int spechdl(){
@@ -171,10 +171,8 @@ void iodevop(){
  		int a = instanceNo(LINENO((unsigned int)genericDev));
  		unsigned int terminalReading = ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL && a >> 31) ? N_DEV_PER_IL : 0;
  		if (terminalReading > 0 /*se il semaforo è in lettura*/){
- 			//debuggerI();
  			genericDev->term.recv_command = currentPCB->p_s.a2;
  		} else /*scrittura*/{
- 			//debuggerO();
  			genericDev->term.transm_command = currentPCB->p_s.a2;
  		}
  	}
@@ -201,11 +199,8 @@ void getpids(){
 	}
 }
 
-void debuggerWaitchild(){}
-
 void waitchild(){
 	//~ tprint("waitchild\n");
-	debuggerWaitchild();
 	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;

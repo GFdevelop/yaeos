@@ -28,7 +28,6 @@ void pgmtrapHandler(){
 	tprint("pgmtrapHandler\n");
 }
 
-void debuggerHDL(){}
 void sysbkHandler(){
 	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;

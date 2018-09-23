@@ -16,18 +16,11 @@
 #include "syscall.h"
 #include "scheduler.h"
 
-void debugger(){}
-void debugger1(){}
-void debugger2(){}
-void debugger3(){}
-void debugger4(){}
-
-
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
 	//~ extern cpu_t slice, tick, interval;
-	
+
 	if (processCount){
 		if (currentPCB == NULL) {
 			if (headProcQ(readyQueue) != NULL) {
@@ -36,19 +29,19 @@ void scheduler(){
 			}
 			else if (softBlock) {
 				//~ tprint("wait scheduler\n");
-				
+
 				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 				WAIT();
 			}
-			else PANIC();
+			else {tprint("SCHEDULER PANIC!\n");PANIC();}
 		}
-		
+
 		//~ interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
 		//~ if (interval > getTODLO()) setTIMER(interval - getTODLO());
 		//~ else setTIMER(0);
-		
+
 		LDST(&currentPCB->p_s);
-		
+
 		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 	}
 	tprint("no process count\n");

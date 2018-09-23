@@ -8,7 +8,7 @@
  * A.A. 2017/2018 								 *
  * Alma Mater Studiorum - University of Bologna  *
  * * * * * * * * * * * * * * * * * * * * * * * * */
-   
+
 #include "pcb.h"
 
 pcb_t pcbFree_table[MAXPROC];
@@ -33,7 +33,7 @@ void freePcb(pcb_t *p){
 		p->activation_time = 0;
 		p->kernel_time = 0;
 		p->user_time = 0;
-		
+
 		p->p_next = pcbfree_h;
 		pcbfree_h = p;
 	}
@@ -54,7 +54,6 @@ pcb_t *allocPcb(){
 		return ret;
 	}
 }
-
 void insertProcQ(pcb_t **head, pcb_t *p){
 	if (p != NULL){
 		if (*head == NULL){		// if list is empty or is end of nodes (recursion) then insert
@@ -64,7 +63,7 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 			p->p_next = *head;
 			*head = p;
 		} else {	// if p has priority <= than this node, try to insert before the next node
-			insertProcQ(&(*head)->p_next, p);
+            insertProcQ(&(*head)->p_next, p);
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;	// if node was inserted then link new node
 		}
 	}
