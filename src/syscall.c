@@ -101,11 +101,10 @@ void semv(){
 	extern pcb_t *currentPCB, *readyQueue;
 	int *value = (int *)currentPCB->p_s.a2;
 	//~ if ((*value)++ < 0) {
-	if (headBlocked(value)) {
+	if (++(*value) < 1) {
 		pcb_t *tmp = removeBlocked(value);
 		insertProcQ(&readyQueue, tmp);
 		tmp->p_semKey = NULL;
-		(*value)++;
 	}
 }
 

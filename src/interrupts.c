@@ -79,16 +79,18 @@ void timer_HDL(){
 		//~ if (currentPCB == NULL) currentPCB = headBlocked(&semDev[CLOCK_SEM]);
 		//~ currentPCB = headBlocked(&semDev[CLOCK_SEM]);
 		
-		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
+		//~ forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
 		
-		//~ pcb_t *removed = removeBlocked(&semDev[CLOCK_SEM]);
-		//~ while (removed != NULL) {
-			//~ insertProcQ(&readyQueue, removed);
-			//~ softBlock--;
+		
+		while ((semDev[CLOCK_SEM]) < 0) {
+			pcb_t *removed = removeBlocked(&semDev[CLOCK_SEM]);
+			insertProcQ(&readyQueue, removed);
+			softBlock--;
 			//~ removed = removeBlocked(&semDev[CLOCK_SEM]);
-			//~ removed->p_semKey = NULL;
-		//~ }
-		semDev[CLOCK_SEM] = 0;
+			removed->p_semKey = NULL;
+			semDev[CLOCK_SEM]++;
+		}
+		//~ semDev[CLOCK_SEM] = 0;
 		
 		tick = getTODLO();
 	}
@@ -177,8 +179,9 @@ void sendACK(termreg_t* device, int type, int index){
 	}
 	
 
-	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
-	if (firstBlocked) {
+	//~ pcb_t *firstBlocked = removeBlocked(&semDev[index]);
+	if ((semDev[index]) < 0) {
+		pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;
 		firstBlocked->p_semKey = NULL;
 		insertProcQ(&readyQueue, firstBlocked);
