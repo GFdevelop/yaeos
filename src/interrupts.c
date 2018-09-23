@@ -81,9 +81,9 @@ void timer_HDL(){
 		
 		//~ forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
 		
-		
+		pcb_t *removed;
 		while ((semDev[CLOCK_SEM]) < 0) {
-			pcb_t *removed = removeBlocked(&semDev[CLOCK_SEM]);
+			removed = removeBlocked(&semDev[CLOCK_SEM]);
 			insertProcQ(&readyQueue, removed);
 			softBlock--;
 			//~ removed = removeBlocked(&semDev[CLOCK_SEM]);

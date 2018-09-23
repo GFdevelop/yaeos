@@ -44,7 +44,7 @@ int terminateprocess(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount, softBlock;
 	extern int semDev[MAX_DEVICES];
-	extern int semWaitChild;
+	extern int *semWaitChild;
 	
 	pcb_t *head, *tmp;
 	int ret = 0;
@@ -69,11 +69,11 @@ int terminateprocess(){
 			else currentPCB = NULL;
 			
 			if (tmp->p_parent != NULL) {
-				if (tmp->p_parent->p_semKey == &semWaitChild){
-					outChildBlocked(tmp->p_parent);
+				if (tmp->p_parent->p_semKey == semWaitChild){
 					tmp->p_parent->p_semKey = NULL;
+					outChildBlocked(tmp->p_parent);
 					insertProcQ(&readyQueue,tmp->p_parent);
-					semWaitChild++;
+					(*semWaitChild)++;
 				}
 			}
 			
@@ -162,13 +162,11 @@ void iodevop(){
 	// TODO: device
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
 	
-	if (currentPCB->p_semKey != NULL) HALT();
-	
-	term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
 	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] -= 1;
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
 	currentPCB = NULL;
+	term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
 }
 
 void getpids(){
@@ -193,12 +191,12 @@ void waitchild(){
 	//~ tprint("waitchild\n");
 	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
-	extern int semWaitChild;
+	extern int *semWaitChild;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
 		//~ tprint("waitchild\n");
-		//~ currentPCB->p_s.pc -= 2*WORD_SIZE;
-		semWaitChild -= 1;
-		if (insertBlocked(&semWaitChild, currentPCB)) PANIC();
+		//~ currentPCB->p_s.pc -= WORD_SIZE;
+		(*semWaitChild )--;
+		if (insertBlocked((int *)&semWaitChild, currentPCB) != 0) PANIC();
 		currentPCB = NULL;
 	}
 }
