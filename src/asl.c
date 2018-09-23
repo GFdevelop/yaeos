@@ -44,7 +44,7 @@ int insertBlocked(int *key, pcb_t *p){
 /*
 Complete information at point [5] in design_choices.txt
 */
-		int hash = ((int)key/2)%ASHDSIZE;	// get hash index (PROJECT CHOICES)
+		int hash = (((int)key)/2)%ASHDSIZE;	// get hash index (PROJECT CHOICES)
 		if (semdhash[hash] == NULL){	// if index is empty or s_next (recursion) is NULL then alloc semaphore
 			if (semdFree_h == NULL) return -1;
 			else {
@@ -64,7 +64,7 @@ Complete information at point [5] in design_choices.txt
 			semd_t * saved = semdhash[hash];
 			semdhash[hash] = semdhash[hash]->s_next;	// go to next semaphore (node) of this hash index
 			int ret = insertBlocked(key,p);
-			if (saved->s_next == NULL) saved->s_next = semdhash[hash]; // link the node inserted (in recursion)
+			if (saved->s_next != semdhash[hash]) saved->s_next = semdhash[hash]; // link the node inserted (in recursion)
 			semdhash[hash] = saved;		//restore hash node
 			return ret;
 		}
@@ -72,19 +72,18 @@ Complete information at point [5] in design_choices.txt
 }
 
 pcb_t *headBlocked(int *key){
-	int hash = ((int)key/2)%ASHDSIZE;
+	int hash = (((int)key)/2)%ASHDSIZE;
 	if (semdhash[hash] == NULL) return NULL;
 	else return headProcQ(semdhash[hash]->s_procQ);
 }
 
 pcb_t* removeBlocked(int *key){
-	int hash = ((int)key/2)%ASHDSIZE;
-	pcb_t * ret = (pcb_t *)NULL;
-	semd_t * saved = (semd_t *)NULL;
+	int hash = (((int)key)/2)%ASHDSIZE;
+	pcb_t * ret = NULL;
+	semd_t * saved = NULL;
 	if (semdhash[hash] == NULL) ret = NULL;
 	else if (semdhash[hash]->s_key == key) {	// if node has that key
 		ret = removeProcQ(&semdhash[hash]->s_procQ);
-		ret->p_semKey = NULL;
 		if (semdhash[hash]->s_procQ == NULL){	// free the semaphore
 			semdhash[hash]->s_key = NULL;
 			saved = semdhash[hash]->s_next;	// save next node
@@ -104,7 +103,7 @@ pcb_t* removeBlocked(int *key){
 }
 
 void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
-	int hash = ((int)key/2)%ASHDSIZE;
+	int hash = (((int)key)/2)%ASHDSIZE;
 	if (semdhash[hash] != NULL) {
 		if (semdhash[hash]->s_key == key) forallProcQ(semdhash[hash]->s_procQ, fun, arg);
 		else {
@@ -118,8 +117,8 @@ void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
 
 void outChildBlocked(pcb_t *p){
 	if (p != NULL){
-		int hash = ((int)p->p_semKey/2)%ASHDSIZE;
-		if (semdhash[hash] != NULL) {
+		int hash = (((int)(p->p_semKey))/2)%ASHDSIZE;
+		if ((semdhash[hash] != NULL) && (p->p_semKey != NULL)) {
 			if (semdhash[hash]->s_key == p->p_semKey) removeBlocked(p->p_semKey);
 			else {
 				semd_t * prev = semdhash[hash];
