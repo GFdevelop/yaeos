@@ -44,7 +44,7 @@ int terminateprocess(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount, softBlock;
 	extern int semDev[MAX_DEVICES];
-	extern int *semWaitChild;
+	extern int semWaitChild;
 
 	pcb_t *head, *tmp;
 	int ret = 0;
@@ -69,15 +69,15 @@ int terminateprocess(){
 			else currentPCB = NULL;
 
 			if (tmp->p_parent != NULL) {
-				if (tmp->p_parent->p_semKey == semWaitChild){
-					tmp->p_parent->p_semKey = NULL;
+				if (tmp->p_parent->p_semKey == &semWaitChild){
 					outChildBlocked(tmp->p_parent);
+					tmp->p_parent->p_semKey = NULL;
 					insertProcQ(&readyQueue,tmp->p_parent);
-					(*semWaitChild)++;
+					semWaitChild++;
 				}
 			}
 
-			if (tmp->p_sib == NULL) {
+			if (tmp->p_sib != NULL) {
 				if ((tmp != head) && (tmp->p_parent != NULL)) {
 					tmp = tmp->p_parent;
 					outChild(tmp->p_first_child);
@@ -191,12 +191,12 @@ void waitchild(){
 	//~ tprint("waitchild\n");
 	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
-	extern int *semWaitChild;
+	extern int semWaitChild;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
 		//~ tprint("waitchild\n");
 		//~ currentPCB->p_s.pc -= WORD_SIZE;
-		(*semWaitChild )--;
-		if (insertBlocked((int *)&semWaitChild, currentPCB) != 0) PANIC();
+		semWaitChild--;
+		if (insertBlocked(&semWaitChild, currentPCB)) PANIC();
 		currentPCB = NULL;
 	}
 }
