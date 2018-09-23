@@ -15,30 +15,8 @@ semd_t semd_table[MAXSEMD];
 semd_t *semdFree_h = &semd_table[MAXSEMD];
 semd_t *semdhash[ASHDSIZE];
 
-void printint_(int a){
-	int b = a%10;
-    a = a/10;
-    if (a>0) printint_(a);
-    if (b==0) {tprint("0");} else if (b==1) {tprint("1");}
-    else if (b==2) {tprint("2");} else if (b==3) {tprint("3");}
-    else if (b==4) {tprint("4");} else if (b==5) {tprint("5");}
-    else if (b==6) {tprint("6");} else if (b==7) {tprint("7");}
-    else if (b==8) {tprint("8");} else if (b==9) {tprint("9");}
-}
-void printint(int a){
-	if (a<0) {tprint("-"); a = -a;}
-    printint_(a);
-	tprint("\n");
-}
-
 int insertBlocked(int *key, pcb_t *p){
 	//if (key==-1) {HALT();}
-	/*tprint("\n");
-	printint((int)key);
-	printint(*key);
-	printint((int)key/2);
-	printint(((int)key/2)%ASHDSIZE);
-	tprint("\n");*/
 	if ((key == NULL)||(p == (pcb_t *)NULL)) return -1;
 	else {
 /*
