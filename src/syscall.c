@@ -23,7 +23,6 @@
 
 
 int createprocess(){
-	//~ tprint("createprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount;
 	pcb_t *childPCB = allocPcb();
@@ -40,7 +39,6 @@ int createprocess(){
 }
 
 int terminateprocess(){
-	//~ tprint("terminateprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount, softBlock;
 	extern int semDev[MAX_DEVICES];
@@ -97,10 +95,8 @@ int terminateprocess(){
 }
 
 void semv(){
-	//~ tprint("semv\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	int *value = (int *)currentPCB->p_s.a2;
-	//~ if ((*value)++ < 0) {
 	if (++(*value) < 1) {
 		pcb_t *tmp = removeBlocked(value);
 		insertProcQ(&readyQueue, tmp);
@@ -109,18 +105,15 @@ void semv(){
 }
 
 void semp(){
-	//~ tprint("semp\n");
 	extern pcb_t *currentPCB;
 	int *value = (int *)currentPCB->p_s.a2;
 	if (--(*value) < 0) {
-		//~ tprint("locked\n");
 		if (insertBlocked(value, currentPCB)) PANIC();
 		currentPCB = NULL;
 	}
 }
 
 int spechdl(){
-	tprint("spechdl\n");
 	// TODO: only one time for type
 	extern pcb_t *currentPCB;
 	unsigned int area;
@@ -133,19 +126,11 @@ int spechdl(){
 	return 0;
 }
 
-/*
-Questa system call restituisce il valore di tre “tempi” del processo:
-Il tempo usato dal processo in modalità user
-Il tempo usato dal processo in modalità kernel (gestione system call e interrupt relativi al processo)
-Il tempo trascorso dalla prima attivazione del processo.
-*/
 void gettime(){
-	//tprint("gettime\n");
 }
 
 
 void waitclock(){
-	//~ tprint("waitclock\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
@@ -158,25 +143,29 @@ void waitclock(){
 }
 
 void iodevop(){
-	//~ tprint("iodevop\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	unsigned int subdev_no = 0;
 	extern unsigned int softBlock;
-	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
-	// TODO: device
+	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
 
 	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] -= 1;
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
 	currentPCB = NULL;
-	if (LINENO((unsigned int)genericDev)+1 == INT_TERMINAL /*se è un terminale*/){
- 		if ((((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL && subdev_no >> 31) ? N_DEV_PER_IL : 0) == 0){ /*scrittura*/
+ 	if ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL ){ /* se è un terminale */
+		if (((subdev_no >> 31) ? N_DEV_PER_IL : 0) == 0){
+			/* in scrittura */
 			genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
- 		} else /*lettura*/ genericDev->term.recv_command = ((state_t *)SYSBK_OLDAREA)->a2;
- 	} else genericDev->dtp.command = ((state_t *)SYSBK_OLDAREA)->a2;
-	//genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
+		} else {
+			/* in lettura */
+			genericDev->term.recv_command = ((state_t *)SYSBK_OLDAREA)->a2;
+		}
+	} else {
+		/* se è un device generico */
+		genericDev->dtp.command = ((state_t *)SYSBK_OLDAREA)->a2;
+	}
 }
 
 void getpids(){

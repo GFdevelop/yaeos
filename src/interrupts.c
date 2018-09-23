@@ -193,8 +193,6 @@ void sendACK(devreg_t* device, int type, int index){
  			break;
 	}
 
-
-	//~ pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 	if ((semDev[index]) < 0) {
 		pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;

@@ -29,11 +29,9 @@ void pgmtrapHandler(){
 }
 
 void sysbkHandler(){
-	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
 
 	if (currentPCB) {
-		//~ ((state_t *)SYSBK_OLDAREA)->pc -= 2*WORD_SIZE;
 		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	}
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
@@ -71,10 +69,5 @@ void sysbkHandler(){
 			tprint("default\n");
 	}
 
-
-	//~ tprint("end\n");
-	//~ if (currentPCB) insertProcQ(&readyQueue, currentPCB);
-	//~ else tprint("NULL exc\n");
 	scheduler();
-	//~ LDST((state_t *)SYSBK_OLDAREA);
 }

@@ -16,7 +16,6 @@ semd_t *semdFree_h = &semd_table[MAXSEMD];
 semd_t *semdhash[ASHDSIZE];
 
 int insertBlocked(int *key, pcb_t *p){
-	//if (key==-1) {HALT();}
 	if ((key == NULL)||(p == (pcb_t *)NULL)) return -1;
 	else {
 /*

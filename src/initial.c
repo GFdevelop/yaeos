@@ -64,48 +64,46 @@ void newArea(memaddr address, void handler()){
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;
 	area->cpsr = STATUS_ALL_INT_DISABLE((area->cpsr) | STATUS_SYS_MODE);
-	//area->cpsr = STATUS_ENABLE_TIMER(area->cpsr);
     area->CP15_Control = (area->CP15_Control) & ~(0x00000001);
 }
 
 
 int main() {
-	//~ tprint("init NEW area\n");
+	// init NEW area
 	newArea(INT_NEWAREA,intHandler);
 	newArea(TLB_NEWAREA,tlbHandler);
 	newArea(PGMTRAP_NEWAREA,pgmtrapHandler);
 	newArea(SYSBK_NEWAREA,sysbkHandler);
-	
-	//~ tprint("init pcb and asl\n");
+
+	// init pcb and asl
 	initPcbs();
 	initASL();
-	
-	//~ tprint("init variables\n");
+
+	// init variables
 	readyQueue = NULL;
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
-	
-	//~ tprint("init semaphores\n");
+
+	// init semaphores
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
-	
-	//~ tprint("create first pcb\n");
+
+	// tprint("create first pcb
 	currentPCB = allocPcb();
 	currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr) | STATUS_SYS_MODE;
 	currentPCB->p_priority = 0;
 	currentPCB->p_s.CP15_Control = (currentPCB->p_s.CP15_Control) & ~(0x00000001);
 	currentPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
 	currentPCB->p_s.pc = (memaddr)test;
-	//currentPCB->p_s.cpsr = STATUS_ENABLE_TIMER(currentPCB->p_s.cpsr);
 	insertProcQ(&readyQueue, currentPCB);
-	
-	//~ tprint("call scheduler\n");
+
+	// call scheduler
 	slice = getTODLO();
 	tick = slice;
 	interval = slice + SLICE_TIME;
 	setTIMER(SLICE_TIME);
 	scheduler();
-	
+
 	return 0;
 }
