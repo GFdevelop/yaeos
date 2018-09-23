@@ -101,7 +101,17 @@ void timer_HDL(){
 }
 
 void device_HDL(){
-	tprint("device_HDL\n");
+	devreg_t *generic;
+	unsigned int terminal_no = 0;
+
+	terminal_no = instanceNo(INT_TERMINAL);
+
+	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
+	generic = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+
+	if ((generic->dtp.status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		sendACK(generic, GENERIC, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+	}
 }
 
 void terminal_HDL(){
@@ -118,9 +128,7 @@ void terminal_HDL(){
 		sendACK(generic, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
 	} else if ((generic->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
 		sendACK(generic, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
-	} else {
- 		sendACK(generic, GENERIC, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
- 	}
+	}
 }
 
 void SVST(state_t *A, state_t *B){

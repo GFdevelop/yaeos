@@ -40,10 +40,8 @@ state_t p5state;
 state_t p6state;
 state_t p7state;
 void *p1p1addr, *p1p0addr;
-void debuggerPrint(){};
 void print(char *msg) {
 	unsigned int status;
-	debuggerPrint();
 	SYSCALL(SEMP, (memaddr)&term_mutex, 0, 0);
 	while (*msg != '\0') {
 		unsigned int command = DEV_TTRS_C_TRSMCHAR | (*msg << BYTELEN);

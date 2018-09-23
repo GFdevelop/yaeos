@@ -133,9 +133,14 @@ int spechdl(){
 	return 0;
 }
 
+/*
+Questa system call restituisce il valore di tre “tempi” del processo:
+Il tempo usato dal processo in modalità user
+Il tempo usato dal processo in modalità kernel (gestione system call e interrupt relativi al processo)
+Il tempo trascorso dalla prima attivazione del processo.
+*/
 void gettime(){
-	tprint("gettime\n");
-
+	//tprint("gettime\n");
 }
 
 
@@ -158,7 +163,7 @@ void iodevop(){
 	extern int semDev[MAX_DEVICES];
 	unsigned int subdev_no = 0;
 	extern unsigned int softBlock;
-	termreg_t *term = (termreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
+	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
 	// TODO: device
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
 
@@ -166,7 +171,12 @@ void iodevop(){
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
 	currentPCB = NULL;
-	term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
+	if (LINENO((unsigned int)genericDev)+1 == INT_TERMINAL /*se è un terminale*/){
+ 		if ((((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL && subdev_no >> 31) ? N_DEV_PER_IL : 0) == 0){ /*scrittura*/
+			genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
+ 		} else /*lettura*/ genericDev->term.recv_command = ((state_t *)SYSBK_OLDAREA)->a2;
+ 	} else genericDev->dtp.command = ((state_t *)SYSBK_OLDAREA)->a2;
+	//genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
 }
 
 void getpids(){
