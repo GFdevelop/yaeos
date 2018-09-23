@@ -24,12 +24,7 @@ void intHandler(){
 	//~ setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
 	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
-<<<<<<< HEAD
 
-		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
-=======
-
->>>>>>> GFdevelop
 	if (currentPCB != NULL) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
