@@ -39,50 +39,59 @@ int createprocess(){
 	}
 }
 
-int recursiveKill(pcb_t *pcb){
+int terminateprocess(){
+	//~ tprint("terminateprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount, softBlock;
 	extern int semDev[MAX_DEVICES];
+	extern int semWaitChild;
+	
+	pcb_t *head, *tmp;
 	int ret = 0;
 	
-    if(pcb!=NULL){
-        if(pcb->p_semKey != NULL){
-            if((pcb->p_semKey >= &semDev[0]) && (pcb->p_semKey <= &semDev[MAX_DEVICES])){
-                softBlock--;
-            } else {
-                if((*pcb->p_semKey) < 0){
-                    (*pcb->p_semKey)++;
-                }
-            }
-            pcb = removeBlocked(pcb->p_semKey);
-            if (pcb == NULL) ret = -1;
-        }
-        else if(currentPCB != pcb) {
-			pcb = outProcQ(&readyQueue, pcb);
-			if (pcb == NULL) ret = -1;
-		}
-        while(pcb->p_first_child){
-            ret = recursiveKill(pcb->p_first_child);
-        }
-        pcb = outChild(pcb);
-        if (pcb == NULL) ret = -1;
-        if(currentPCB == pcb){
-            currentPCB = NULL;
-        }
-		//~ outProcQ(&readyQueue, pcb);
-        freePcb(pcb);
-        processCount--;
-    }
-    return ret;
-}
-
-int terminateprocess(){
-	//~ tprint("terminateprocess\n");
-	extern pcb_t *currentPCB/*, *readyQueue*/;
-	//~ extern unsigned int processCount/*, softBlock*/;
+	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
+	else head = (pcb_t *)currentPCB->p_s.a2;
 	
-	if ((pcb_t *)currentPCB->p_s.a2 == NULL) return recursiveKill(currentPCB);
-	else return recursiveKill((pcb_t *)currentPCB->p_s.a2);
+	tmp = head;
+	
+	while (tmp != NULL) {
+		if (tmp->p_first_child != NULL) tmp = tmp->p_first_child;
+		else {
+			if (tmp->p_semKey != NULL) {
+				outChildBlocked(tmp);
+				if ((tmp->p_semKey >= semDev) && (tmp->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
+				if((*tmp->p_semKey) < 0) (*tmp->p_semKey)++;
+				//~ tmp->p_semKey = NULL;
+			}
+			else if (tmp != currentPCB) {
+				if (!outProcQ(&readyQueue, tmp)) return -1;
+			}
+			else currentPCB = NULL;
+			
+			if (tmp->p_parent->p_semKey == &semWaitChild){
+				outChildBlocked(tmp->p_parent);
+				insertProcQ(&readyQueue,tmp->p_parent);
+				semWaitChild++;
+				//~ tmp->p_semKey = NULL;
+			}
+			
+			if (tmp->p_sib == NULL) {
+				if ((tmp != head) && (tmp->p_parent != NULL)) {
+					tmp = tmp->p_parent;
+					outChild(tmp->p_first_child);
+					freePcb(tmp->p_first_child);
+				}
+				else {
+					outChild(tmp);
+					freePcb(tmp);
+					tmp = NULL;
+				}
+				processCount--;
+			}
+		}
+	}
+	
+	return ret;
 }
 
 void semv(){
@@ -92,7 +101,7 @@ void semv(){
 	//~ if ((*value)++ < 0) {
 	if (headBlocked(value)) {
 		pcb_t *tmp = removeBlocked(value);
-		tmp->p_semKey = NULL;
+		//~ tmp->p_semKey = NULL;
 		insertProcQ(&readyQueue, tmp);
 		(*value)++;
 	}
@@ -136,8 +145,8 @@ void waitclock(){
 	extern unsigned int softBlock;
 	
 	//semp
-	semDev[CLOCK_SEM] = semDev[CLOCK_SEM] - 1;
-	insertBlocked(&semDev[CLOCK_SEM], currentPCB);
+	semDev[CLOCK_SEM] -= 1;
+	if (insertBlocked(&semDev[CLOCK_SEM], currentPCB)) PANIC();
 	softBlock += 1;
 	currentPCB = NULL;
 }
@@ -187,8 +196,10 @@ void waitchild(){
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
-		semWaitChild--;
-		insertBlocked(&semWaitChild, currentPCB);
+		//~ tprint("waitchild\n");
+		//~ currentPCB->p_s.pc -= 2*WORD_SIZE;
+		semWaitChild -= 1;
+		if (insertBlocked(&semWaitChild, currentPCB)) PANIC();
 		currentPCB = NULL;
 	}
 }

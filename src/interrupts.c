@@ -76,17 +76,14 @@ int pending() {
 }
 
 void ticker(pcb_t *removed, void *nil){
-	extern pcb_t *currentPCB, *readyQueue;
+	extern pcb_t/* *currentPCB,*/ *readyQueue;
 	extern unsigned int softBlock;
-	extern int semDev[MAX_DEVICES];
+	//~ extern int semDev[MAX_DEVICES];
 	
 	outChildBlocked(removed);
-	removed->p_semKey = NULL;
 	insertProcQ(&readyQueue, removed);
-	//~ if (semDev[CLOCK_SEM] < 0) {
-		softBlock--;
-		semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
-	//~ }
+	softBlock--;
+	//~ semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
 }
 
 void timer_HDL(){
@@ -98,23 +95,28 @@ void timer_HDL(){
 	
 	if (getTODLO() >= (slice + SLICE_TIME)){
 		//~ tprint("|");
-		insertProcQ(&readyQueue, currentPCB);
-		currentPCB = NULL;
+		if (currentPCB){
+			insertProcQ(&readyQueue, currentPCB);
+			currentPCB = NULL;
+		}
 		slice = getTODLO();
 	}
 	
 	if (getTODLO() >= (tick + TICK_TIME)){
 		//~ tprint("?");
 		//~ if (currentPCB == NULL) currentPCB = headBlocked(&semDev[CLOCK_SEM]);
-		//~ if (headBlocked(&semDev[CLOCK_SEM])) forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
-		pcb_t *removed;
-		currentPCB = headBlocked(&semDev[CLOCK_SEM]);
-		while ((removed = removeBlocked(&semDev[CLOCK_SEM]))){
-				removed->p_semKey = NULL;
-				insertProcQ(&readyQueue, removed);
-				softBlock--;
-				semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
-		}
+		//~ currentPCB = headBlocked(&semDev[CLOCK_SEM]);
+		
+		forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
+		
+		//~ pcb_t *removed = removeBlocked(&semDev[CLOCK_SEM]);
+		//~ while (removed != NULL) {
+			//~ insertProcQ(&readyQueue, removed);
+			//~ softBlock--;
+			//~ removed = removeBlocked(&semDev[CLOCK_SEM]);
+		//~ }
+		semDev[CLOCK_SEM] = 0;
+		
 		tick = getTODLO();
 	}
 	
@@ -189,25 +191,24 @@ void sendACK(termreg_t* device, int type, int index){
 	extern pcb_t *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
-
-	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
-	//if(firstBlocked == NULL) WAIT();
+	
 	switch (type) {
 		case TRANSM:
-			firstBlocked->p_s.a1 = device->transm_status;
+			((state_t *)INT_OLDAREA)->a1 = device->transm_status;
 			device->transm_command = DEV_C_ACK;
 			break;
 		case RECV:
-			firstBlocked->p_s.a1 = device->recv_status;
+			((state_t *)INT_OLDAREA)->a1 = device->recv_status;
 			device->recv_command = DEV_C_ACK;
 			break;
 	}
 	
-	//semv
-	insertProcQ(&readyQueue, firstBlocked);
-	firstBlocked->p_semKey = NULL;
-	//~ if (semDev[index] < 0) {
+
+	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
+	if (firstBlocked) {
+		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;
+		insertProcQ(&readyQueue, firstBlocked);
 		softBlock--;
 		semDev[index] = semDev[index] + 1;
-	//~ }
+	}
 }

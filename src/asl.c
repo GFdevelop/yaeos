@@ -60,6 +60,7 @@ pcb_t* removeBlocked(int *key){
 	if (semdhash[hash] == NULL) ret = NULL;
 	else if (semdhash[hash]->s_key == key) {	// if node has that key
 		ret = removeProcQ(&semdhash[hash]->s_procQ);
+		ret->p_semKey = NULL;
 		if (semdhash[hash]->s_procQ == NULL){	// free the semaphore
 			semdhash[hash]->s_key = NULL;
 			saved = semdhash[hash]->s_next;	// save next node
