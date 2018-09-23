@@ -101,11 +101,10 @@ void semv(){
 	extern pcb_t *currentPCB, *readyQueue;
 	int *value = (int *)currentPCB->p_s.a2;
 	//~ if ((*value)++ < 0) {
-	if (headBlocked(value)) {
+	if (++(*value) < 1) {
 		pcb_t *tmp = removeBlocked(value);
 		insertProcQ(&readyQueue, tmp);
 		tmp->p_semKey = NULL;
-		(*value)++;
 	}
 }
 
@@ -117,7 +116,7 @@ void semp(){
 		//~ tprint("locked\n");
 		if (insertBlocked(value, currentPCB)) PANIC();
 		currentPCB = NULL;
-	} else if (*value < 1) *value += 1;
+	}
 }
 
 int spechdl(){
@@ -159,27 +158,16 @@ void iodevop(){
 	extern int semDev[MAX_DEVICES];
 	unsigned int subdev_no = 0;
 	extern unsigned int softBlock;
-	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
+	termreg_t *term = (termreg_t *)(currentPCB->p_s.a3 - 2*WS);		// why?????
 	// TODO: device
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
 
-	//semp
-	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] = semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] -1;
+	if (currentPCB->p_semKey != NULL) HALT();
+
+	term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
+	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] -= 1;
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
-	if (LINENO((unsigned int)genericDev)+1 != INT_TERMINAL /*se non è un terminale*/){
-		genericDev->dtp.command = currentPCB->p_s.a2;
- 	} else {
- 		int a = instanceNo(LINENO((unsigned int)genericDev));
- 		unsigned int terminalReading = ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL && a >> 31) ? N_DEV_PER_IL : 0;
- 		if (terminalReading > 0 /*se il semaforo è in lettura*/){
- 			genericDev->term.recv_command = currentPCB->p_s.a2;
- 		} else /*scrittura*/{
- 			genericDev->term.transm_command = currentPCB->p_s.a2;
- 		}
- 	}
-
-	//semp
 	currentPCB = NULL;
 }
 
