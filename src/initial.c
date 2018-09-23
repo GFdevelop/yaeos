@@ -56,7 +56,7 @@ pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
 cpu_t slice, tick, interval;
-int semWaitChild;
+int *semWaitChild;
 
 
 void newArea(memaddr address, void handler()){
@@ -88,7 +88,7 @@ int main() {
 	
 	//~ tprint("init semaphores\n");
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
-	semWaitChild = 0;
+	*semWaitChild = 0;
 	
 	//~ tprint("create first pcb\n");
 	currentPCB = allocPcb();
