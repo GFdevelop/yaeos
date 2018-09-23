@@ -16,13 +16,17 @@
 #include "syscall.h"
 #include "scheduler.h"
 
-void debugger(){};
+void debugger(){}
+void debugger1(){}
+void debugger2(){}
+void debugger3(){}
+void debugger4(){}
 
 
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	extern cpu_t slice, tick, interval;
+	//~ extern cpu_t slice, tick, interval;
 	
 	if (processCount){
 		if (currentPCB == NULL) {

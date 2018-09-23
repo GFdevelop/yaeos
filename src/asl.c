@@ -8,7 +8,7 @@
  * A.A. 2017/2018 								 *
  * Alma Mater Studiorum - University of Bologna  *
  * * * * * * * * * * * * * * * * * * * * * * * * */
- 
+
 #include "asl.h"
 
 semd_t semd_table[MAXSEMD];
@@ -47,7 +47,7 @@ Complete information at point [5] in design_choices.txt
 	}
 }
 
-pcb_t *headBlocked(int *key){ 
+pcb_t *headBlocked(int *key){
 	int hash = (*key/2)%ASHDSIZE;
 	if (semdhash[hash] == NULL) return NULL;
 	else return headProcQ(semdhash[hash]->s_procQ);
@@ -55,11 +55,12 @@ pcb_t *headBlocked(int *key){
 
 pcb_t* removeBlocked(int *key){
 	int hash = (*key/2)%ASHDSIZE;
-	pcb_t * ret = NULL;
-	semd_t * saved = NULL;
+	pcb_t * ret = (pcb_t *)NULL;
+	semd_t * saved = (semd_t *)NULL;
 	if (semdhash[hash] == NULL) ret = NULL;
 	else if (semdhash[hash]->s_key == key) {	// if node has that key
 		ret = removeProcQ(&semdhash[hash]->s_procQ);
+		ret->p_semKey = NULL;
 		if (semdhash[hash]->s_procQ == NULL){	// free the semaphore
 			semdhash[hash]->s_key = NULL;
 			saved = semdhash[hash]->s_next;	// save next node

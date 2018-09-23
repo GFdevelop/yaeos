@@ -27,6 +27,13 @@ void initPcbs(){
 
 void freePcb(pcb_t *p){
 	if (p != NULL){
+		p->p_parent = NULL;
+		p->p_first_child = NULL;
+		p->p_sib = NULL;
+		p->activation_time = 0;
+		p->kernel_time = 0;
+		p->user_time = 0;
+		
 		p->p_next = pcbfree_h;
 		pcbfree_h = p;
 	}
@@ -56,9 +63,6 @@ void insertProcQ(pcb_t **head, pcb_t *p){
 		} else if (p->p_priority > (*head)->p_priority){	// if p has major priority of this node then insert
 			p->p_next = *head;
 			*head = p;
-		} else if ((*head)->p_next == NULL) {
-			p->p_next = NULL;
-			(*head)->p_next = p;
 		} else {	// if p has priority <= than this node, try to insert before the next node
 			insertProcQ(&(*head)->p_next, p);
 			if ((*head)->p_next == p->p_next) (*head)->p_next = p;	// if node was inserted then link new node
@@ -109,8 +113,8 @@ void insertChild(pcb_t *parent, pcb_t *p){
 			pcb_t *saved = parent->p_first_child;
 			parent->p_first_child = saved->p_sib;	// move to next sibling
 			insertChild(parent,p);
+			if (parent->p_first_child == p) saved->p_sib = p;		// if end of list then we link new node
 			parent->p_first_child = saved;	//restore old child
-			if (saved->p_sib == NULL) saved->p_sib = p;		// if end of list then we link new node
 		}
 	}
 }
@@ -121,6 +125,7 @@ pcb_t *removeChild(pcb_t *p){
 		pcb_t * ret = p->p_first_child;
 		p->p_first_child = ret->p_sib;
 		ret->p_sib = NULL;
+		ret->p_parent = NULL;
 		return ret;
 	}
 }
@@ -132,12 +137,13 @@ pcb_t *outChild(pcb_t *p){
 	if ((p == NULL) || (p->p_parent == NULL) || (p->p_parent->p_first_child == NULL)) return NULL;	//not in list
 	else if (p == p->p_parent->p_first_child) return removeChild(p->p_parent);	// (move first child to p->p_sib)
 	else {
-		pcb_t * saved = p->p_parent->p_first_child;
-		p->p_parent->p_first_child = saved->p_sib;		// first child "is" next sibling
+		pcb_t * parent = p->p_parent;
+		pcb_t * saved = parent->p_first_child;
+		parent->p_first_child = saved->p_sib;		// first child "is" next sibling
 		pcb_t * ret = outChild(p);						// check next sibling
 		// if node is removed then link follower node
-		if (saved->p_sib != p->p_parent->p_first_child) saved->p_sib = p->p_parent->p_first_child;
-		p->p_parent->p_first_child = saved;		// restore
+		if (saved->p_sib != parent->p_first_child) saved->p_sib = parent->p_first_child;
+		parent->p_first_child = saved;		// restore
 		return ret;
 	}
 }
