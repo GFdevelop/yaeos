@@ -30,6 +30,9 @@ void freePcb(pcb_t *p){
 		p->p_parent = NULL;
 		p->p_first_child = NULL;
 		p->p_sib = NULL;
+		p->p_priority = 0;
+		p->p_semKey = NULL;
+		
 		p->activation_time = 0;
 		p->kernel_time = 0;
 		p->user_time = 0;
@@ -44,10 +47,14 @@ pcb_t *allocPcb(){
 	else {
 		pcb_t * ret = pcbfree_h;
 		pcbfree_h = pcbfree_h->p_next;	//move head of free list
+		
 		ret->p_next = NULL;
 		ret->p_parent = NULL;
 		ret->p_first_child = NULL;
 		ret->p_sib = NULL;
+		ret->p_priority = 0;
+		ret->p_semKey = NULL;
+		
 		ret->activation_time = 0;
 		ret->kernel_time = 0;
 		ret->user_time = 0;
@@ -58,14 +65,14 @@ pcb_t *allocPcb(){
 void insertProcQ(pcb_t **head, pcb_t *p){
 	if (p != NULL){
 		if (*head == NULL){		// if list is empty or is end of nodes (recursion) then insert
+			p->p_next = *head;
 			*head = p;
-			(*head)->p_next = NULL;
 		} else if (p->p_priority > (*head)->p_priority){	// if p has major priority of this node then insert
 			p->p_next = *head;
 			*head = p;
 		} else {	// if p has priority <= than this node, try to insert before the next node
 			insertProcQ(&(*head)->p_next, p);
-			if ((*head)->p_next == p->p_next) (*head)->p_next = p;	// if node was inserted then link new node
+			//~ if ((*head)->p_next == p->p_next) (*head)->p_next = p;	// if node was inserted then link new node
 		}
 	}
 }

@@ -59,20 +59,22 @@ int terminateprocess(){
 		else {
 			if (tmp->p_semKey != NULL) {
 				outChildBlocked(tmp);
-				if ((tmp->p_semKey >= semDev) && (tmp->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
+				if ((tmp->p_semKey >= &semDev[0]) && (tmp->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
 				if((*tmp->p_semKey) < 0) (*tmp->p_semKey)++;
-				//~ tmp->p_semKey = NULL;
+				tmp->p_semKey = NULL;
 			}
 			else if (tmp != currentPCB) {
 				if (!outProcQ(&readyQueue, tmp)) return -1;
 			}
 			else currentPCB = NULL;
 			
-			if (tmp->p_parent->p_semKey == &semWaitChild){
-				outChildBlocked(tmp->p_parent);
-				insertProcQ(&readyQueue,tmp->p_parent);
-				semWaitChild++;
-				//~ tmp->p_semKey = NULL;
+			if (tmp->p_parent != NULL) {
+				if (tmp->p_parent->p_semKey == &semWaitChild){
+					outChildBlocked(tmp->p_parent);
+					tmp->p_parent->p_semKey = NULL;
+					insertProcQ(&readyQueue,tmp->p_parent);
+					semWaitChild++;
+				}
 			}
 			
 			if (tmp->p_sib == NULL) {
@@ -101,8 +103,8 @@ void semv(){
 	//~ if ((*value)++ < 0) {
 	if (headBlocked(value)) {
 		pcb_t *tmp = removeBlocked(value);
-		//~ tmp->p_semKey = NULL;
 		insertProcQ(&readyQueue, tmp);
+		tmp->p_semKey = NULL;
 		(*value)++;
 	}
 }
@@ -161,14 +163,12 @@ void iodevop(){
 	// TODO: device
 	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
 	
-	//semp
-	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] = semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] -1;
+	if (currentPCB->p_semKey != NULL) HALT();
+	
+	term->transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
+	semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no] -= 1;
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
-	
-	term->transm_command = currentPCB->p_s.a2;
-	
-	//semp
 	currentPCB = NULL;
 }
 

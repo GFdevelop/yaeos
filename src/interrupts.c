@@ -46,35 +46,6 @@ void intHandler(){
 	scheduler();
 }
 
-int pending() {
-	unsigned int cause = getCAUSE();
-	if(CAUSE_IP_GET(cause, INT_LOWEST)) {
-		device_HDL(INT_LOWEST);
-		return 1;
-	}
-	else if(CAUSE_IP_GET(cause, INT_DISK)) {
-		device_HDL(INT_DISK);
-		return 1;
-	}
-	else if(CAUSE_IP_GET(cause, INT_TAPE)) {
-		device_HDL(INT_TAPE);
-		return 1;
-	}
-	else if(CAUSE_IP_GET(cause, INT_UNUSED)) {
-		device_HDL(INT_UNUSED);
-		return 1;
-	}
-	else if(CAUSE_IP_GET(cause, INT_PRINTER)) {
-		device_HDL(INT_PRINTER);
-		return 1;
-	}
-	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) {
-		terminal_HDL();
-		return 1;
-	}
-	else return 0;
-}
-
 void ticker(pcb_t *removed, void *nil){
 	extern pcb_t/* *currentPCB,*/ *readyQueue;
 	extern unsigned int softBlock;
@@ -83,6 +54,7 @@ void ticker(pcb_t *removed, void *nil){
 	outChildBlocked(removed);
 	insertProcQ(&readyQueue, removed);
 	softBlock--;
+	removed->p_semKey = NULL;
 	//~ semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
 }
 
@@ -114,6 +86,7 @@ void timer_HDL(){
 			//~ insertProcQ(&readyQueue, removed);
 			//~ softBlock--;
 			//~ removed = removeBlocked(&semDev[CLOCK_SEM]);
+			//~ removed->p_semKey = NULL;
 		//~ }
 		semDev[CLOCK_SEM] = 0;
 		
@@ -207,8 +180,9 @@ void sendACK(termreg_t* device, int type, int index){
 	pcb_t *firstBlocked = removeBlocked(&semDev[index]);
 	if (firstBlocked) {
 		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;
+		firstBlocked->p_semKey = NULL;
 		insertProcQ(&readyQueue, firstBlocked);
 		softBlock--;
-		semDev[index] = semDev[index] + 1;
+		semDev[index] += 1;
 	}
 }
