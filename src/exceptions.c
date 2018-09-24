@@ -14,6 +14,7 @@
 #include <arch.h>
 #include "pcb.h"
 #include "asl.h"
+#include "initial.h"
 #include "syscall.h"
 #include "exceptions.h"
 #include "interrupts.h"
@@ -21,28 +22,32 @@
 
 
 void tlbHandler(){
-	tprint("tlbHandler\n");
+	//~ tprint("tlbHandler\n");
 }
 
 void pgmtrapHandler(){
-	tprint("pgmtrapHandler\n");
+	//~ tprint("pgmtrapHandler\n");
 }
 
 void sysbkHandler(){
 	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
+	extern cpu_t elapsed, lastTime;
+	
+	elapsed = getTODLO() - lastTime;
+	lastTime = getTODLO();
+	currentPCB->user_time += elapsed;
 	
 	if (currentPCB) {
-		//~ ((state_t *)SYSBK_OLDAREA)->pc -= 2*WORD_SIZE;
 		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	}
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
 		case(CREATEPROCESS):
-			currentPCB->p_s.a1 = createprocess();
+			createprocess();
 			break;
 		case(TERMINATEPROCESS):
-			currentPCB->p_s.a1 = terminateprocess();
+			terminateprocess();
 			break;
 		case(SEMV):
 			semv(((state_t *)SYSBK_OLDAREA)->a2);
@@ -72,10 +77,5 @@ void sysbkHandler(){
 			tprint("default\n");
 	}
 	
-	
-	//~ tprint("end\n");
-	//~ if (currentPCB) insertProcQ(&readyQueue, currentPCB);
-	//~ else tprint("NULL exc\n");
 	scheduler();
-	//~ LDST((state_t *)SYSBK_OLDAREA);
 }

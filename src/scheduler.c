@@ -17,39 +17,34 @@
 #include "scheduler.h"
 
 void debugger(){}
-void debugger1(){}
-void debugger2(){}
-void debugger3(){}
-void debugger4(){}
-
 
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	//~ extern cpu_t slice, tick, interval;
+	extern cpu_t slice, elapsed, lastTime;
 	
 	if (processCount){
 		if (currentPCB == NULL) {
 			if (headProcQ(readyQueue) != NULL) {
 				currentPCB = removeProcQ(&readyQueue);
-				//~ setTIMER(SLICE_TIME);
+				if (currentPCB->activation_time == 0) currentPCB->activation_time = getTODLO();
+				slice = getTODLO();
+				setTIMER(SLICE_TIME);
 			}
 			else if (softBlock) {
-				//~ tprint("wait scheduler\n");
-				
+				debugger();
+				setTIMER(SLICE_TIME);
 				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 				WAIT();
 			}
 			else PANIC();
 		}
 		
-		//~ interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
-		//~ if (interval > getTODLO()) setTIMER(interval - getTODLO());
-		//~ else setTIMER(0);
+		elapsed = getTODLO() - lastTime;
+		lastTime = getTODLO();
+		currentPCB->kernel_time += elapsed;
 		
 		LDST(&currentPCB->p_s);
-		
-		//((void (*)(void))readyQueue[turn--]->p_s.pc)();
 	}
 	tprint("no process count\n");
 	HALT();

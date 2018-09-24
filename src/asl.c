@@ -15,6 +15,7 @@ semd_t semd_table[MAXSEMD];
 semd_t *semdFree_h = &semd_table[MAXSEMD];
 semd_t *semdhash[ASHDSIZE];
 
+
 int insertBlocked(int *key, pcb_t *p){
 	if (p == NULL) return -1;
 	else {
@@ -28,6 +29,7 @@ Complete information at point [5] in design_choices.txt
 				semdhash[hash] = semdFree_h;	// put head of free list in hash index
 				semdFree_h = semdFree_h->s_next;	// head of free list is next of free list
 				semdhash[hash]->s_next = NULL;
+				semdhash[hash]->s_procQ = NULL;
 				semdhash[hash]->s_key = key;
 				p->p_semKey = key;
 				insertProcQ(&semdhash[hash]->s_procQ,p);
@@ -48,10 +50,17 @@ Complete information at point [5] in design_choices.txt
 	}
 }
 
-pcb_t *headBlocked(int *key){ 
+pcb_t *headBlocked(int *key){
 	int hash = (((int)key)/2)%ASHDSIZE;
 	if (semdhash[hash] == NULL) return NULL;
-	else return headProcQ(semdhash[hash]->s_procQ);
+	if (semdhash[hash]->s_key == key) return headProcQ(semdhash[hash]->s_procQ);
+	else {
+		semd_t * saved = semdhash[hash];
+		semdhash[hash] = semdhash[hash]->s_next;
+		pcb_t *ret = headBlocked(key);
+		semdhash[hash] = saved;
+		return ret;
+	}
 }
 
 pcb_t* removeBlocked(int *key){
@@ -61,6 +70,7 @@ pcb_t* removeBlocked(int *key){
 	if (semdhash[hash] == NULL) ret = NULL;
 	else if (semdhash[hash]->s_key == key) {	// if node has that key
 		ret = removeProcQ(&semdhash[hash]->s_procQ);
+		ret->p_semKey = NULL;
 		if (semdhash[hash]->s_procQ == NULL){	// free the semaphore
 			semdhash[hash]->s_key = NULL;
 			saved = semdhash[hash]->s_next;	// save next node
@@ -93,15 +103,27 @@ void forallBlocked(int *key, void (*fun)(pcb_t *pcb, void *), void *arg){
 }
 
 void outChildBlocked(pcb_t *p){
-	if (p != NULL){
+	if ((p != NULL) && (p->p_semKey != NULL)){
+		semd_t * saved;
 		int hash = (((int)(p->p_semKey))/2)%ASHDSIZE;
-		if ((semdhash[hash] != NULL) && (p->p_semKey != NULL)) {
-			if (semdhash[hash]->s_key == p->p_semKey) removeBlocked(p->p_semKey);
+		if (semdhash[hash] != NULL) {
+			if (semdhash[hash]->s_key == p->p_semKey) {
+				outProcQ(&semdhash[hash]->s_procQ, p);
+				p->p_semKey = NULL;
+				if (semdhash[hash]->s_procQ == NULL){	// free the semaphore
+					semdhash[hash]->s_key = NULL;
+					saved = semdhash[hash]->s_next;	// save next node
+					semdhash[hash]->s_next = semdFree_h;		//link to head of free list
+					semdFree_h = semdhash[hash];				// free node is new head
+					semdhash[hash] = saved;
+				}
+			}
 			else {
-				semd_t * prev = semdhash[hash];
+				saved = semdhash[hash];
 				semdhash[hash] = semdhash[hash]->s_next;	// go to next node of this hash and...
 				outChildBlocked(p);							// ...check for pcb key
-				semdhash[hash] = prev;
+				if (saved->s_next != semdhash[hash]) saved->s_next = semdhash[hash];
+				semdhash[hash] = saved;
 			}
 		}
 	}
