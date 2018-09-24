@@ -114,7 +114,6 @@ void semp(){
 }
 
 int spechdl(){
-	// TODO: only one time for type
 	extern pcb_t *currentPCB;
 	unsigned int area;
 	if (currentPCB->p_s.a2 == SPECSYSBP) area = SYSBK_NEWAREA;
@@ -135,7 +134,6 @@ void waitclock(){
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
 
-	//semp
 	semDev[CLOCK_SEM] -= 1;
 	if (insertBlocked(&semDev[CLOCK_SEM], currentPCB)) PANIC();
 	softBlock += 1;
@@ -154,30 +152,27 @@ void iodevop(){
 	insertBlocked(&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no], currentPCB);
 	softBlock += 1;
 	currentPCB = NULL;
- 	if ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL ){ /* se è un terminale */
+ 	if ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL ){ /* if is a terminal */
 		if (((subdev_no >> 31) ? N_DEV_PER_IL : 0) == 0){
-			/* in scrittura */
+			/* write */
 			genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
 		} else {
-			/* in lettura */
+			/* read */
 			genericDev->term.recv_command = ((state_t *)SYSBK_OLDAREA)->a2;
 		}
 	} else {
-		/* se è un device generico */
+		/* if is a generic device */
 		genericDev->dtp.command = ((state_t *)SYSBK_OLDAREA)->a2;
 	}
 }
 
 void getpids(){
-	//~ tprint("getpids\n");
 	extern pcb_t *currentPCB;
-	if (currentPCB->p_parent == NULL) {
-		//~ tprint("root\n");
+	if (currentPCB->p_parent == NULL) { /* root */
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = NULL;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;
 	}
-	else {
-		//~ tprint("process\n");
+	else { /* process */
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = currentPCB;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) {
 			if (currentPCB->p_parent->p_parent == NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;	//if parent is root
@@ -187,15 +182,12 @@ void getpids(){
 }
 
 void waitchild(){
-	//~ tprint("waitchild\n");
 	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;
 	if (currentPCB->p_first_child != NULL){	// if no child, don't wait
-		//~ tprint("waitchild\n");
-		//~ currentPCB->p_s.pc -= WORD_SIZE;
 		semWaitChild--;
-		if (insertBlocked(&semWaitChild, currentPCB)) PANIC();
+		insertBlocked(&semWaitChild, currentPCB);
 		currentPCB = NULL;
 	}
 }

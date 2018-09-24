@@ -21,28 +21,28 @@ int insertBlocked(int *key, pcb_t *p){
 /*
 Complete information at point [5] in design_choices.txt
 */
-		int hash = (((int)key)/2)%ASHDSIZE;	// get hash index (PROJECT CHOICES)
-		if (semdhash[hash] == NULL){	// if index is empty or s_next (recursion) is NULL then alloc semaphore
+		int hash = (((int)key)/2)%ASHDSIZE;										// get hash index (PROJECT CHOICES)
+		if (semdhash[hash] == NULL){											// if index is empty or s_next (recursion) is NULL then alloc semaphore
 			if (semdFree_h == NULL) return -1;
 			else {
-				semdhash[hash] = semdFree_h;	// put head of free list in hash index
-				semdFree_h = semdFree_h->s_next;	// head of free list is next of free list
+				semdhash[hash] = semdFree_h;									// put head of free list in hash index
+				semdFree_h = semdFree_h->s_next;								// head of free list is next of free list
 				semdhash[hash]->s_next = NULL;
 				semdhash[hash]->s_key = key;
 				p->p_semKey = key;
 				insertProcQ(&semdhash[hash]->s_procQ,p);
 				return 0;
 			}
-		} else if (semdhash[hash]->s_key == key){		// if key==s_key then insert pcb to same semaphore
+		} else if (semdhash[hash]->s_key == key){								// if key==s_key then insert pcb to same semaphore
 			p->p_semKey = key;
 			insertProcQ(&semdhash[hash]->s_procQ,p);
 			return 0;
-		} else {		// if key!=s_key then recursive check s_next
+		} else {																// if key!=s_key then recursive check s_next
 			semd_t * saved = semdhash[hash];
-			semdhash[hash] = semdhash[hash]->s_next;	// go to next semaphore (node) of this hash index
+			semdhash[hash] = semdhash[hash]->s_next;							// go to next semaphore (node) of this hash index
 			int ret = insertBlocked(key,p);
-			if (saved->s_next != semdhash[hash]) saved->s_next = semdhash[hash]; // link the node inserted (in recursion)
-			semdhash[hash] = saved;		//restore hash node
+			if (saved->s_next != semdhash[hash]) saved->s_next = semdhash[hash];// link the node inserted (in recursion)
+			semdhash[hash] = saved;												// restore hash node
 			return ret;
 		}
 	}
@@ -59,22 +59,22 @@ pcb_t* removeBlocked(int *key){
 	pcb_t * ret = NULL;
 	semd_t * saved = NULL;
 	if (semdhash[hash] == NULL) ret = NULL;
-	else if (semdhash[hash]->s_key == key) {	// if node has that key
+	else if (semdhash[hash]->s_key == key) {		// if node has that key
 		ret = removeProcQ(&semdhash[hash]->s_procQ);
-		if (semdhash[hash]->s_procQ == NULL){	// free the semaphore
+		if (semdhash[hash]->s_procQ == NULL){		// free the semaphore
 			semdhash[hash]->s_key = NULL;
-			saved = semdhash[hash]->s_next;	// save next node
-			semdhash[hash]->s_next = semdFree_h;		//link to head of free list
-			semdFree_h = semdhash[hash];				// free node is new head
+			saved = semdhash[hash]->s_next;			// save next node
+			semdhash[hash]->s_next = semdFree_h;	// link to head of free list
+			semdFree_h = semdhash[hash];			// free node is new head
 			semdhash[hash] = saved;
 		}
-	} else {		// if node has't that key
+	} else {										// if node has't that key
 		saved = semdhash[hash];
-		semdhash[hash] = semdhash[hash]->s_next;	//move to next node
+		semdhash[hash] = semdhash[hash]->s_next;	// move to next node
 		ret = removeBlocked(key);
-		// if next node is changed (in recursion) then link new node
+													// if next node is changed (in recursion) then link new node
 		if (saved->s_next != semdhash[hash]) saved->s_next = semdhash[hash];
-		semdhash[hash] = saved;	//restore hash node
+		semdhash[hash] = saved;						// restore hash node
 	}
 	return ret;
 }
@@ -108,8 +108,8 @@ void outChildBlocked(pcb_t *p){
 }
 
 void initASL(){
-	semdFree_h = semdFree_h-1;	//index of array
-	// if pcbfree_h point to last then follower is NULL otherwise is next
+	semdFree_h = semdFree_h-1;		// index of array
+									// if pcbfree_h point to last then follower is NULL otherwise is next
 	semdFree_h->s_next = (semdFree_h < &semd_table[MAXSEMD-1]) ? semdFree_h+1 : NULL;
 	if (semdFree_h > semd_table) initASL();
 }

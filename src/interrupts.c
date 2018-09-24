@@ -21,8 +21,6 @@
 #include "syscall.h"
 
 void intHandler(){
-	//~ setSTATUS(STATUS_ALL_INT_DISABLE(getSTATUS()));
-	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
 
 	if (currentPCB != NULL) {
@@ -41,34 +39,17 @@ void intHandler(){
 	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) terminal_HDL();
 	else PANIC();
 
-	//~ tprint("end\n");
-	//~ if (currentPCB) LDST((state_t *)INT_OLDAREA);
 	scheduler();
 }
 
-void ticker(pcb_t *removed, void *nil){
-	extern pcb_t/* *currentPCB,*/ *readyQueue;
-	extern unsigned int softBlock;
-	//~ extern int semDev[MAX_DEVICES];
-
-	outChildBlocked(removed);
-	insertProcQ(&readyQueue, removed);
-	softBlock--;
-	removed->p_semKey = NULL;
-	//~ semDev[CLOCK_SEM] = semDev[CLOCK_SEM] + 1;
-}
-
 void timer_HDL(){
-	//~ tprint("timer_HDL\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern cpu_t slice, tick, interval;
 	extern unsigned int softBlock;
 
 	if (getTODLO() >= (slice + SLICE_TIME)){
-		//tprint("|\n");
 		if (currentPCB){
-			//tprint("*\n");
 			insertProcQ(&readyQueue, currentPCB);
 			currentPCB = NULL;
 		}
@@ -76,23 +57,14 @@ void timer_HDL(){
 	}
 
 	if (getTODLO() >= (tick + TICK_TIME)){
-		//tprint("?\n");
-		//~ if (currentPCB == NULL) currentPCB = headBlocked(&semDev[CLOCK_SEM]);
-		//~ currentPCB = headBlocked(&semDev[CLOCK_SEM]);
-
-		//~ forallBlocked(&semDev[CLOCK_SEM], ticker, NULL);
-
 		pcb_t *removed;
 		while ((semDev[CLOCK_SEM]) < 0) {
 			removed = removeBlocked(&semDev[CLOCK_SEM]);
 			insertProcQ(&readyQueue, removed);
 			softBlock--;
-			//~ removed = removeBlocked(&semDev[CLOCK_SEM]);
 			removed->p_semKey = NULL;
 			semDev[CLOCK_SEM]++;
 		}
-		//~ semDev[CLOCK_SEM] = 0;
-
 		tick = getTODLO();
 	}
 
@@ -101,24 +73,14 @@ void timer_HDL(){
 }
 
 void device_HDL(){
-	devreg_t *generic;
-	unsigned int terminal_no = 0;
-
-	terminal_no = instanceNo(INT_TERMINAL);
-
-	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
-	generic = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
-
-	if ((generic->dtp.status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(generic, GENERIC, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
-	}
+	//
 }
 
 void terminal_HDL(){
-	//~ tprint ("terminal_HDL\n");
 	devreg_t *generic;
 	unsigned int terminal_no = 0;
 
+	//1. Determinare quale dei teminali ha generato l'interrupt
 	terminal_no = instanceNo(INT_TERMINAL);
 
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
@@ -160,7 +122,6 @@ unsigned int instanceNo(unsigned int device){
 	memaddr *line;
 	unsigned int subdev_no = 0;
 
-	//1. Determinare quale dei teminali ha generato l'interrupt
 	line = (memaddr *)IDEV_BITMAP_ADDR(device);
 	while(*line > 0){
 		if(*line & 1) break;
