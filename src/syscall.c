@@ -129,9 +129,9 @@ void gettime(){
 	//~ tprint("gettime\n");
 	extern pcb_t *currentPCB;
 	
-	*(cpu_t *)currentPCB->p_s.a1 = (getTODLO() - currentPCB->activation_time);
-	*(cpu_t *)currentPCB->p_s.a2 = currentPCB->user_time;
-	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->kernel_time;
+	*(cpu_t *)currentPCB->p_s.a2 = (getTODLO() - currentPCB->activation_time);
+	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->user_time;
+	*(cpu_t *)currentPCB->p_s.a4 = currentPCB->kernel_time;
 }
 
 
@@ -190,7 +190,7 @@ void getpids(){
 }
 
 void waitchild(){
-	tprint("waitchild\n");
+	//~ tprint("waitchild\n");
 	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;

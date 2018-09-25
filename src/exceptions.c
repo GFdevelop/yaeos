@@ -36,7 +36,7 @@ void sysbkHandler(){
 	
 	elapsed = getTODLO() - lastTime;
 	lastTime = getTODLO();
-	currentPCB->user_time += elapsed;
+	//~ currentPCB->user_time += elapsed;
 	
 	if (currentPCB) {
 		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
