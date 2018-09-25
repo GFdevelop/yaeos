@@ -21,8 +21,10 @@ source:
 		--exclude=*.o \
 		--exclude=*.a \
 		--exclude=p1test \
+		--exclude=p2test \
 		--exclude=bin \
 		--exclude=lib \
+		--transform='s|^|yaeos/|' \
 		-czf $(SRCTAR).tar.gz *
 		gzip -t $(SRCTAR).tar.gz
 		sha1sum $(SRCTAR).tar.gz > $(SRCTAR).sha1sum
@@ -36,10 +38,11 @@ release: all
 		--exclude=src \
 		--exclude=makefile \
 		--exclude=makefile* \
-		--transform='s|^bin|usr/bin|' \
-		--transform='s|^lib|usr/lib/$(PROJ)|' \
-		--transform='s|^doc|usr/share/doc/$(PROJ)|' \
-		--transform='s|^include|usr/include/$(PROJ)|' \
+		--transform='s|^yaeos/bin|usr/bin|' \
+		--transform='s|^yaeos/lib|usr/lib/$(PROJ)|' \
+		--transform='s|^yaeos/doc|usr/share/doc/$(PROJ)|' \
+		--transform='s|^yaeos/include|usr/include/$(PROJ)|' \
+		--transform='s|^|yaeos/|' \
 		-czf $(RELTAR).tar.gz *
 		gzip -t $(RELTAR).tar.gz
 		sha1sum $(RELTAR).tar.gz > $(RELTAR).sha1sum

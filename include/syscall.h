@@ -16,8 +16,8 @@
 #define SPECTLB 1
 #define SPECPGMT 2
 
-int createprocess();
-int terminateprocess();
+void createprocess();
+void terminateprocess();
 void semv();
 void semp();
 int spechdl();

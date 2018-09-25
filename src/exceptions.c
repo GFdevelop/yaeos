@@ -14,6 +14,7 @@
 #include <arch.h>
 #include "pcb.h"
 #include "asl.h"
+#include "initial.h"
 #include "syscall.h"
 #include "exceptions.h"
 #include "interrupts.h"
@@ -21,25 +22,30 @@
 
 
 void tlbHandler(){
-	tprint("tlbHandler\n");
+	//~ tprint("tlbHandler\n");
 }
 
 void pgmtrapHandler(){
-	tprint("pgmtrapHandler\n");
+	//~ tprint("pgmtrapHandler\n");
 }
 
 void sysbkHandler(){
 	extern pcb_t *currentPCB;
+	extern cpu_t elapsed, lastTime;
+
+	elapsed = getTODLO() - lastTime;
+	lastTime = getTODLO();
+	currentPCB->user_time += elapsed;
 
 	if (currentPCB) {
 		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	}
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
 		case(CREATEPROCESS):
-			currentPCB->p_s.a1 = createprocess();
+			createprocess();
 			break;
 		case(TERMINATEPROCESS):
-			currentPCB->p_s.a1 = terminateprocess();
+			terminateprocess();
 			break;
 		case(SEMV):
 			semv(((state_t *)SYSBK_OLDAREA)->a2);

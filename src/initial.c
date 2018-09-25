@@ -28,7 +28,7 @@
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
-cpu_t slice, tick, interval;
+cpu_t slice, tick, interval, elapsed, lastTime;
 int semWaitChild;
 
 void newArea(memaddr address, void handler()){
@@ -52,11 +52,16 @@ int main() {
 
 	// init variables
 	readyQueue = NULL;
-	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
 
-	// init semaphores
+	slice = getTODLO();
+	tick = slice;
+	interval = slice + SLICE_TIME;
+	elapsed = 0;
+	lastTime = slice;
+
+	//~ tprint("init semaphores\n");
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
 
@@ -67,12 +72,8 @@ int main() {
 	currentPCB->p_s.CP15_Control = (currentPCB->p_s.CP15_Control) & ~(0x00000001);
 	currentPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
 	currentPCB->p_s.pc = (memaddr)test;
-	insertProcQ(&readyQueue, currentPCB);
 
-	// call scheduler
-	slice = getTODLO();
-	tick = slice;
-	interval = slice + SLICE_TIME;
+	//~ tprint("call scheduler\n");
 	setTIMER(SLICE_TIME);
 	scheduler();
 

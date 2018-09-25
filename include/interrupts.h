@@ -11,6 +11,6 @@ void device_HDL();
 void terminal_HDL();
 void SVST(state_t *A, state_t *B);
 unsigned int instanceNo(unsigned int device);
-void sendACK(devreg_t* device, int type, int index);
+void sendACK(devreg_t *device, int type, int index);
 
 #endif

@@ -21,7 +21,13 @@
 #include "syscall.h"
 
 void intHandler(){
+	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
+	extern cpu_t elapsed, lastTime;
+
+	elapsed = getTODLO() - lastTime;
+	lastTime = getTODLO();
+	currentPCB->user_time += elapsed;
 
 	if (currentPCB != NULL) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
@@ -45,8 +51,9 @@ void intHandler(){
 void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t slice, tick, interval;
-	extern unsigned int softBlock;
+	extern cpu_t slice, tick, interval, elapsed;
+
+	currentPCB->kernel_time -= getTODLO() - elapsed;
 
 	if (getTODLO() >= (slice + SLICE_TIME)){
 		if (currentPCB){
@@ -57,18 +64,15 @@ void timer_HDL(){
 	}
 
 	if (getTODLO() >= (tick + TICK_TIME)){
-		pcb_t *removed;
 		while ((semDev[CLOCK_SEM]) < 0) {
-			removed = removeBlocked(&semDev[CLOCK_SEM]);
-			insertProcQ(&readyQueue, removed);
-			softBlock--;
-			removed->p_semKey = NULL;
-			semDev[CLOCK_SEM]++;
+			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
+			semv();
 		}
 		tick = getTODLO();
 	}
 
 	interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
+	interval = interval + (interval - elapsed);
 	setTIMER(interval - getTODLO());
 }
 
@@ -77,19 +81,20 @@ void device_HDL(){
 }
 
 void terminal_HDL(){
-	devreg_t *generic;
+	//~ tprint ("terminal_HDL\n");
+	devreg_t *term;
 	unsigned int terminal_no = 0;
 
 	//1. Determinare quale dei teminali ha generato l'interrupt
 	terminal_no = instanceNo(INT_TERMINAL);
 
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
-	generic = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
+	term = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
 
-	if ((generic->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(generic, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
-	} else if ((generic->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		sendACK(generic, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
+	if((term->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
+		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + DEV_PER_INT + terminal_no);
+	}else if((term->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
+		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);
 	}
 }
 
@@ -134,8 +139,8 @@ unsigned int instanceNo(unsigned int device){
 }
 
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type
-void sendACK(devreg_t* device, int type, int index){
-	extern pcb_t *readyQueue;
+void sendACK(devreg_t *device, int type, int index){
+	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
 
@@ -149,17 +154,21 @@ void sendACK(devreg_t* device, int type, int index){
 			device->term.recv_command = DEV_C_ACK;
 			break;
 		case GENERIC:
- 			((state_t *)INT_OLDAREA)->a1 = device->dtp.status;
- 			device->dtp.command = DEV_C_ACK;
- 			break;
+			((state_t *)INT_OLDAREA)->a1 = device->dtp.status;
+			device->dtp.command = DEV_C_ACK;
+			break;
 	}
 
+	// TODO: clean semaphores for device except for sendACK(), last need more test
+
+	// manual semv() because semv() work with currentPCB and this can be NULL in this time
 	if ((semDev[index]) < 0) {
 		pcb_t *firstBlocked = removeBlocked(&semDev[index]);
-		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;
-		firstBlocked->p_semKey = NULL;
 		insertProcQ(&readyQueue, firstBlocked);
 		softBlock--;
 		semDev[index] += 1;
+
+		// return value on blocked process
+		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;
 	}
 }

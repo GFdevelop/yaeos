@@ -64,7 +64,6 @@ pcb_t *allocPcb(){
 void insertProcQ(pcb_t **head, pcb_t *p){
 	if (p != NULL){
 		if (*head == NULL){		// if list is empty or is end of nodes (recursion) then insert
-			p->p_next = *head;
 			*head = p;
 		} else if (p->p_priority > (*head)->p_priority){	// if p has major priority of this node then insert
 			p->p_next = *head;

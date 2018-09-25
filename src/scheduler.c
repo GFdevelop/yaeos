@@ -16,21 +16,33 @@
 #include "syscall.h"
 #include "scheduler.h"
 
+void debugger(){}
+
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
+	extern cpu_t slice, elapsed, lastTime;
 
 	if (processCount){
 		if (currentPCB == NULL) {
 			if (headProcQ(readyQueue) != NULL) {
 				currentPCB = removeProcQ(&readyQueue);
+				if (currentPCB->activation_time == 0) currentPCB->activation_time = getTODLO();
+				slice = getTODLO();
+				setTIMER(SLICE_TIME);
 			}
 			else if (softBlock) {
+				debugger();
+				setTIMER(SLICE_TIME);
 				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 				WAIT();
 			}
 			else PANIC();
 		}
+
+		elapsed = getTODLO() - lastTime;
+		lastTime = getTODLO();
+		currentPCB->kernel_time += elapsed;
 
 		LDST(&currentPCB->p_s);
 	}
