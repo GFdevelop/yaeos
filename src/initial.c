@@ -35,8 +35,9 @@ void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
 	area->sp = RAM_TOP;
-	area->cpsr = STATUS_ALL_INT_DISABLE((area->cpsr) | STATUS_SYS_MODE);
-    area->CP15_Control = (area->CP15_Control) & ~(0x00000001);
+	area->cpsr = STATUS_SYS_MODE;
+	area->cpsr = STATUS_ALL_INT_DISABLE(area->cpsr);
+    area->CP15_Control = CP15_CONTROL_NULL;
 }
 
 int main() {
@@ -50,8 +51,8 @@ int main() {
 	initPcbs();
 	initASL();
 
-	// init variables
-	readyQueue = NULL;
+	//~ tprint("init variables\n");
+	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
 
@@ -65,16 +66,16 @@ int main() {
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
 
-	// tprint("create first pcb
-	currentPCB = allocPcb();
-	currentPCB->p_s.cpsr = STATUS_ALL_INT_ENABLE(currentPCB->p_s.cpsr) | STATUS_SYS_MODE;
-	currentPCB->p_priority = 0;
-	currentPCB->p_s.CP15_Control = (currentPCB->p_s.CP15_Control) & ~(0x00000001);
-	currentPCB->p_s.sp = RAM_TOP-FRAME_SIZE;
-	currentPCB->p_s.pc = (memaddr)test;
+	//~ tprint("create first pcb\n");
+	readyQueue = allocPcb();
+	readyQueue->p_priority = 0;
+	readyQueue->p_s.cpsr = STATUS_SYS_MODE;
+	readyQueue->p_s.cpsr = STATUS_ALL_INT_ENABLE(readyQueue->p_s.cpsr);
+	readyQueue->p_s.CP15_Control = CP15_CONTROL_NULL;
+	readyQueue->p_s.sp = RAM_TOP-FRAME_SIZE;
+	readyQueue->p_s.pc = (memaddr)test;
 
 	//~ tprint("call scheduler\n");
-	setTIMER(SLICE_TIME);
 	scheduler();
 
 	return 0;

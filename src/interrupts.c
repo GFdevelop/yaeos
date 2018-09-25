@@ -27,7 +27,7 @@ void intHandler(){
 
 	elapsed = getTODLO() - lastTime;
 	lastTime = getTODLO();
-	currentPCB->user_time += elapsed;
+	//~ currentPCB->user_time += elapsed;
 
 	if (currentPCB != NULL) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
@@ -53,7 +53,7 @@ void timer_HDL(){
 	extern int semDev[MAX_DEVICES];
 	extern cpu_t slice, tick, interval, elapsed;
 
-	currentPCB->kernel_time -= getTODLO() - elapsed;
+	//~ currentPCB->kernel_time -= getTODLO() - elapsed;
 
 	if (getTODLO() >= (slice + SLICE_TIME)){
 		if (currentPCB){
@@ -159,16 +159,17 @@ void sendACK(devreg_t *device, int type, int index){
 			break;
 	}
 
-	// TODO: clean semaphores for device except for sendACK(), last need more test
 
-	// manual semv() because semv() work with currentPCB and this can be NULL in this time
-	if ((semDev[index]) < 0) {
-		pcb_t *firstBlocked = removeBlocked(&semDev[index]);
-		insertProcQ(&readyQueue, firstBlocked);
-		softBlock--;
-		semDev[index] += 1;
+	// if readyQueue isn't empty the scheduler get the currentPCB from readyQueue and then execute the interrupt (before LDST ?!?)
+	// I write this code because is good pratice not to write the same things in several places
 
-		// return value on blocked process
-		firstBlocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;
+	if ((semDev[index]) < 0) {	// tprint don't lock any process, then we skip this
+		pcb_t * save = NULL;
+		if (currentPCB) save = currentPCB;	// there is a process that start after this interrupt
+		currentPCB = headBlocked(&semDev[index]);
+		currentPCB->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
+		currentPCB->p_s.a2 = (unsigned int)&semDev[index];	// set value for semv()
+		semv();
+		currentPCB = save;	// restore
 	}
 }
