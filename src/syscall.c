@@ -129,9 +129,9 @@ void gettime(){
 	//~ tprint("gettime\n");
 	extern pcb_t *currentPCB;
 
-	*(cpu_t *)currentPCB->p_s.a1 = (getTODLO() - currentPCB->activation_time);
-	*(cpu_t *)currentPCB->p_s.a2 = currentPCB->user_time;
-	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->kernel_time;
+	*(cpu_t *)currentPCB->p_s.a2 = currentPCB->activation_time;
+	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->user_time;
+	*(cpu_t *)currentPCB->p_s.a4 = currentPCB->kernel_time;
 }
 
 
@@ -144,20 +144,21 @@ void waitclock(){
 	semp();
 }
 
-void iodevop(){	// TODO: check and fix iodevop()
-	//~ tprint("iodevop\n");
+void iodevop(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	unsigned int subdev_no = 0;
 	extern unsigned int softBlock;
 	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);
-	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
 
-	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
+	unsigned int line = LINENO(currentPCB->p_s.a3 - 2*WS);
+	unsigned int subdev_no = instanceNo(line);
+	int state = (subdev_no >> 31 && line == INT_TERMINAL) ? N_DEV_PER_IL : 0;
+
+	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(line) * DEV_PER_INT + DEV_PER_INT + subdev_no + state];
 	semp();
 
- 	if ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL ){ /* se è un terminale */
-		if (((subdev_no >> 31) ? N_DEV_PER_IL : 0) == 0){
+ 	if (line == INT_TERMINAL){ /* se è un terminale */
+		if (state == 0){
 			/* in scrittura */
 			genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
 		} else {
