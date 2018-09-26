@@ -55,7 +55,7 @@
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
-cpu_t slice, tick, interval, elapsed, lastTime;
+cpu_t checkpoint, slice, lastSlice, tick, lastTick;
 int semWaitChild;
 
 
@@ -85,12 +85,6 @@ int main() {
 	processCount = 1;
 	softBlock = 0;
 	
-	slice = getTODLO();
-	tick = slice;
-	interval = slice + SLICE_TIME;
-	elapsed = 0;
-	lastTime = slice;
-	
 	//~ tprint("init semaphores\n");
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
@@ -103,6 +97,11 @@ int main() {
 	readyQueue->p_s.CP15_Control = CP15_CONTROL_NULL;
 	readyQueue->p_s.sp = RAM_TOP-FRAME_SIZE;
 	readyQueue->p_s.pc = (memaddr)test;
+	
+	//~ checkpoint = getTODLO();
+	slice = SLICE_TIME;
+	tick = TICK_TIME;
+	lastSlice = lastTick = getTODLO();
 	
 	//~ tprint("call scheduler\n");
 	scheduler();

@@ -32,15 +32,14 @@ void pgmtrapHandler(){
 void sysbkHandler(){
 	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
-	extern cpu_t elapsed, lastTime;
+	extern cpu_t checkpoint;
 	
-	elapsed = getTODLO() - lastTime;
-	lastTime = getTODLO();
-	//~ currentPCB->user_time += elapsed;
+	SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	
-	if (currentPCB) {
-		SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
-	}
+	if (currentPCB->p_s.cpsr & STATUS_USER_MODE)currentPCB->user_time += getTODLO() - checkpoint;
+	else currentPCB->kernel_time += getTODLO() - checkpoint;
+	checkpoint = getTODLO();
+	
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
 		case(CREATEPROCESS):
