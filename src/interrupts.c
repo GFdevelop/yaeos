@@ -23,15 +23,15 @@
 void intHandler(){
 	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
-	extern cpu_t elapsed, lastTime;
-
-	elapsed = getTODLO() - lastTime;
-	lastTime = getTODLO();
-	//~ currentPCB->user_time += elapsed;
+	extern cpu_t checkpoint;
 
 	if (currentPCB != NULL) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
+
+		if (currentPCB->p_s.cpsr & STATUS_USER_MODE)currentPCB->user_time += getTODLO() - checkpoint;
+		else currentPCB->kernel_time += getTODLO() - checkpoint;
+		checkpoint = getTODLO();
 	}
 
 	unsigned int cause = getCAUSE();
@@ -51,29 +51,28 @@ void intHandler(){
 void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t slice, tick, interval, elapsed;
+	extern cpu_t checkpoint, slice, lastSlice, tick, lastTick;
 
-	//~ currentPCB->kernel_time -= getTODLO() - elapsed;
-
-	if (getTODLO() >= (slice + SLICE_TIME)){
+	if (getTODLO() >= (lastSlice + slice)){
 		if (currentPCB){
 			insertProcQ(&readyQueue, currentPCB);
 			currentPCB = NULL;
 		}
-		slice = getTODLO();
+		slice = (lastSlice + (2 * SLICE_TIME)) - getTODLO();
+		lastSlice = getTODLO();
 	}
 
-	if (getTODLO() >= (tick + TICK_TIME)){
+	if (getTODLO() >= (lastTick + tick)){
 		while ((semDev[CLOCK_SEM]) < 0) {
 			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
 			semv();
 		}
-		tick = getTODLO();
+		tick = (lastTick + (2 * TICK_TIME)) - getTODLO();
+		lastTick = getTODLO();
 	}
 
-	interval = MIN(slice + SLICE_TIME, tick + TICK_TIME);
-	interval = interval + (interval - elapsed);
-	setTIMER(interval - getTODLO());
+	checkpoint = getTODLO();
+	setTIMER(MIN(slice, tick));
 }
 
 void device_HDL(){
@@ -142,7 +141,6 @@ unsigned int instanceNo(unsigned int device){
 void sendACK(devreg_t *device, int type, int index){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
-	extern unsigned int softBlock;
 
 	switch (type) {
 		case TRANSM:

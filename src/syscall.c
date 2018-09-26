@@ -90,12 +90,16 @@ void semv(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
+	extern cpu_t checkpoint;
 
 	int *value = (int *)currentPCB->p_s.a2;
 	if ((*value)++ < 1) {
 		pcb_t *tmp = removeBlocked(value);
 		insertProcQ(&readyQueue, tmp);
 		if ((value >= semDev) && (value <= &semDev[MAX_DEVICES - 1])) softBlock--;
+
+		currentPCB->kernel_time += getTODLO() - checkpoint;
+		checkpoint = getTODLO();
 	}
 }
 
@@ -103,11 +107,16 @@ void semp(){
 	extern pcb_t *currentPCB;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
+	extern cpu_t checkpoint;
 
 	int *value = (int *)currentPCB->p_s.a2;
 	if (--(*value) < 0) {
 		if (insertBlocked(value, currentPCB)) PANIC();
 		if ((value >= semDev) && (value <= &semDev[MAX_DEVICES - 1])) softBlock++;
+
+		currentPCB->kernel_time += getTODLO() - checkpoint;
+		checkpoint = getTODLO();
+
 		currentPCB = NULL;
 	}
 }
@@ -128,9 +137,13 @@ int spechdl(){
 void gettime(){
 	//~ tprint("gettime\n");
 	extern pcb_t *currentPCB;
+	extern cpu_t checkpoint;
+
+	currentPCB->kernel_time += getTODLO() - checkpoint;
+
 	*(cpu_t *)currentPCB->p_s.a2 = currentPCB->user_time;
-+	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->kernel_time;
-+	*(cpu_t *)currentPCB->p_s.a4 = (getTODLO() - currentPCB->activation_time);
+	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->kernel_time;
+	*(cpu_t *)currentPCB->p_s.a4 = (getTODLO() - currentPCB->activation_time);
 }
 
 
