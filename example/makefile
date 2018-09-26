@@ -8,7 +8,7 @@ p1test: p1test.o ../src/pcb.o ../src/asl.o
 	echo [OK] $@
 
 p2test: p2test.04 ../src/initial.o ../src/pcb.o ../src/asl.o ../src/interrupts.o ../src/exceptions.o ../src/syscall.o ../src/scheduler.o
-	$(LD) -T $(ELFSCRIPT) -o $@ $(SYSLIB) $^ $(INC_DIR)/libdiv.o -I $(INC_DIR) -I ../include
+	$(LD) -T $(ELFSCRIPT) -o $@ $(SYSLIB) $^ -I $(INC_DIR) -I ../include
 	echo [OK] $@
 
 p2test.04: p2test.04.c
