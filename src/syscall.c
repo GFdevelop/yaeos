@@ -162,11 +162,12 @@ void iodevop(){
 	extern unsigned int softBlock;
 	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);
 
-	unsigned int line = LINENO(currentPCB->p_s.a3 - 2*WS);
-	unsigned int subdev_no = instanceNo(line);
-	int state = (subdev_no >> 31 && line == INT_TERMINAL) ? N_DEV_PER_IL : 0;
+	unsigned int device_no = (currentPCB->p_s.a3 - 2*WS - DEV_REG_START)%DEV_REGBLOCK_SIZE;
+	unsigned int line = LINENO(currentPCB->p_s.a3 - 2*WS,device_no);
 
-	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(line) * DEV_PER_INT + DEV_PER_INT + subdev_no + state];
+	int state = ((device_no >> 31 && line == INT_TERMINAL) ? N_DEV_PER_IL : 0);// serve?
+
+	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(line) * DEV_PER_INT + DEV_PER_INT + device_no + state];
 	semp();
 
  	if (line == INT_TERMINAL){ /* se è un terminale */

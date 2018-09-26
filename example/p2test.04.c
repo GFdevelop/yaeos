@@ -281,7 +281,7 @@ void p5(void) {
 
 void p6(void) {
 	int i;
-	int j = 0;
+	//~ int j = 0;
 	for (i = 0; i < 10000; i++)
 		;
 	SYSCALL(SEMP, (memaddr)&p5p6_mutex, 0, 0);
@@ -290,7 +290,8 @@ void p6(void) {
 
 	print("p6 generating a program trap without setting trap vector\n");
 
-	i /= j;
+	//~ i /= j;
+	i = *((int*)0x43);
 
 	print("error - p6 still executing\n");
 	PANIC();
