@@ -161,26 +161,27 @@ void iodevop(){	// TODO: check and fix iodevop()
 	//~ tprint("iodevop\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	unsigned int subdev_no = 0;
 	extern unsigned int softBlock;
-	devreg_t *genericDev = (devreg_t *)(currentPCB->p_s.a3 - 2*WS);
-	subdev_no = instanceNo(LINENO(currentPCB->p_s.a3 - 2*WS));
+	unsigned int *cmd = 0;
 	
-	currentPCB->p_s.a2 = (unsigned int)&semDev[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT+ DEV_PER_INT + subdev_no];
-	semp();
+	int lineNo = LINENO(currentPCB->p_s.a3);
 	
- 	if ((LINENO((unsigned int)genericDev)+1) == INT_TERMINAL ){ /* se è un terminale */
-		if (((subdev_no >> 31) ? N_DEV_PER_IL : 0) == 0){
-			/* in scrittura */
-			genericDev->term.transm_command = ((state_t *)SYSBK_OLDAREA)->a2;
-		} else {
-			/* in lettura */
-			genericDev->term.recv_command = ((state_t *)SYSBK_OLDAREA)->a2;
-		}
-	} else {
-		/* se è un device generico */
-		genericDev->dtp.command = ((state_t *)SYSBK_OLDAREA)->a2;
+	if ((lineNo <= IL_TIMER) || (lineNo > INT_TERMINAL)) PANIC();
+	int devNo = DEVICENO(currentPCB->p_s.a3);
+	devreg_t *device = (devreg_t *)DEV_REG_ADDR(lineNo, devNo);
+	
+	if ((lineNo >= IL_DISK) && (lineNo < IL_TERMINAL)) {
+		devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT + DEVICENO(currentPCB->p_s.a3);
+		cmd = &device->dtp.command;
 	}
+	else {
+		devNo = EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + TERMNO(currentPCB->p_s.a3);
+		cmd = (TERMTYPE(currentPCB->p_s.a3)) ? &device->term.transm_command : &device->term.recv_command;
+	}
+	
+	currentPCB->p_s.a2 = (unsigned int)&semDev[devNo];
+	semp();
+	*cmd = ((state_t *)SYSBK_OLDAREA)->a2;
 }
 
 void getpids(){
