@@ -6,7 +6,7 @@
 #define LINENO(addr)		( DEV_ADDR_SIZE(addr) / DEV_REGBLOCK_SIZE )
 #define DEVICENO(addr)		(( DEV_ADDR_SIZE(addr) % DEV_REGBLOCK_SIZE ) / DEV_REG_SIZE )
 #define TERMNO(addr)		(( DEV_ADDR_SIZE(addr) % DEV_REGBLOCK_SIZE ) / ( DEV_REG_SIZE / 2 ))
-#define INDEVNO(termno)		( termno % 2 )
+#define INDEVNO(termno)		( termno / 2 )
 #define TERMTYPE(termno)	( termno % 2 )
 
 typedef unsigned int memaddr;
