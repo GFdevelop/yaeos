@@ -19,6 +19,7 @@
 #include "initial.h"
 #include "syscall.h"
 #include "interrupts.h"
+#include "exceptions.h"
 #include "scheduler.h"
 
 
@@ -85,7 +86,6 @@ void terminateprocess(){	// TODO: terminateprocess was rewrited, I have to work 
 	}
 }
 
-// REMEMBER: sendACK() don't use this function, the trouble is not here!!!
 void semv(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int softBlock;
@@ -121,17 +121,29 @@ void semp(){
 	}
 }
 
-int spechdl(){
-	tprint("spechdl\n");
+void spechdl(){
+	//~ tprint("spechdl\n");
 	extern pcb_t *currentPCB;
-	unsigned int area;
-	if (currentPCB->p_s.a2 == SPECSYSBP) area = SYSBK_NEWAREA;
-	else if (currentPCB->p_s.a2 == SPECTLB)  area = TLB_NEWAREA;
-	else if (currentPCB->p_s.a2 == SPECPGMT)  area = PGMTRAP_NEWAREA;
-	else return -1;
-	currentPCB->p_s.a3 = area;
-	area = currentPCB->p_s.a4;
-	return 0;
+	extern state_t *sys5vector[6];
+
+	if(sys5vector[currentPCB->p_s.a2] == NULL) currentPCB->p_s.a1 = -1;
+	else {
+		SVST((state_t *)currentPCB->p_s.a3,sys5vector[currentPCB->p_s.a2]);
+		SVST((state_t *)currentPCB->p_s.a4,sys5vector[currentPCB->p_s.a2 + 1]);
+
+		switch(currentPCB->p_s.a2){
+			case(SPECSYSBP):
+				sys5vector[currentPCB->p_s.a2 + 1]->pc = (unsigned int)sysbkHandler;
+				break;
+			case(SPECTLB):
+				sys5vector[currentPCB->p_s.a2 + 1]->pc = (unsigned int)tlbHandler;
+				break;
+			case(SPECPGMT):
+				sys5vector[currentPCB->p_s.a2 + 1]->pc = (unsigned int)pgmtrapHandler;
+				break;
+		}
+		currentPCB->p_s.a1 = 0;
+	}
 }
 
 void gettime(){

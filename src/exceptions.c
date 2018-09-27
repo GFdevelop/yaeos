@@ -23,15 +23,42 @@
 
 void tlbHandler(){
 	//~ tprint("tlbHandler\n");
+	extern pcb_t *currentPCB;
+	extern state_t *sys5vector[6];
+
+	((state_t *)TLB_OLDAREA)->pc -= WORD_SIZE;
+	SVST((state_t *)TLB_OLDAREA, &currentPCB->p_s);
+
+	if (sys5vector[SPECTLB] == NULL) {
+		currentPCB->p_s.a2 = (memaddr)NULL;
+		terminateprocess();
+	}
+	// TODO: else
+
+	scheduler();
 }
 
 void pgmtrapHandler(){
 	//~ tprint("pgmtrapHandler\n");
+	extern pcb_t *currentPCB;
+	extern state_t *sys5vector[6];
+
+	((state_t *)PGMTRAP_OLDAREA)->pc -= WORD_SIZE;
+	SVST((state_t *)PGMTRAP_OLDAREA, &currentPCB->p_s);
+
+	if (sys5vector[SPECPGMT] == NULL) {
+		currentPCB->p_s.a2 = (memaddr)NULL;
+		terminateprocess();
+	}
+	// TODO: else
+
+	scheduler();
 }
 
 void sysbkHandler(){
 	extern pcb_t *currentPCB;
 	extern cpu_t checkpoint;
+	extern state_t *sys5vector[6];
 
 	SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 
@@ -72,7 +99,10 @@ void sysbkHandler(){
 			waitchild();
 			break;
 		default:
-			tprint("default\n");
+			if (sys5vector[SPECSYSBP] == NULL) {
+				currentPCB->p_s.a2 = (memaddr)NULL;
+				terminateprocess();
+			}
 	}
 
 	scheduler();

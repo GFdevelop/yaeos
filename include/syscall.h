@@ -20,7 +20,7 @@ void createprocess();
 void terminateprocess();
 void semv();
 void semp();
-int spechdl();
+void spechdl();
 void gettime();
 void waitclock();
 void iodevop();
