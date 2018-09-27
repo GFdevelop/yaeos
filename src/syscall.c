@@ -152,33 +152,43 @@ void waitclock(){
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
 
-	currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
+	currentPCB->p_s.a2 = (memaddr)&semDev[CLOCK_SEM];
 	semp();
 }
 
 void iodevop(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	extern unsigned int softBlock;
-	unsigned int *cmd = 0;
+	//~ memaddr *cmd;
 
 	int lineNo = LINENO(currentPCB->p_s.a3);
+	int devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT;
+	devNo += ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
 
-	if ((lineNo <= IL_TIMER) || (lineNo > INT_TERMINAL)) PANIC();
-	int devNo = DEVICENO(currentPCB->p_s.a3);
-	devreg_t *device = (devreg_t *)DEV_REG_ADDR(lineNo, devNo);
+	// TODO: device not ready
+	*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
 
-	if ((lineNo >= IL_DISK) && (lineNo < IL_TERMINAL)) {
-		devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT + DEVICENO(currentPCB->p_s.a3);
-		cmd = &device->dtp.command;
-	} else {
-		devNo = EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + TERMNO(currentPCB->p_s.a3);
-		cmd = (TERMTYPE(currentPCB->p_s.a3)) ? &device->term.transm_command : &device->term.recv_command;
-	}
-
-	currentPCB->p_s.a2 = (unsigned int)&semDev[devNo];
+	currentPCB->p_s.a2 = (memaddr)&semDev[devNo];
 	semp();
-	*cmd = ((state_t *)SYSBK_OLDAREA)->a2;
+
+
+	//~ int lineNo = LINENO(currentPCB->p_s.a3);
+
+	//~ int subDevNo = TERMNO(currentPCB->p_s.a3);
+	//~ int devNo = INDEVNO(subDevNo);
+	//~ devreg_t *device = (devreg_t *)DEV_REG_ADDR(lineNo, devNo);
+
+	//~ if ((lineNo >= IL_DISK) && (lineNo < IL_TERMINAL)) cmd = &device->dtp.command;
+	//~ else {
+		//~ devNo = subDevNo;
+		//~ cmd = ( TERMTYPE(subDevNo) ) ? &device->term.transm_command : &device->term.recv_command;
+	//~ }
+
+	//~ devNo += EXT_IL_INDEX(lineNo) * DEV_PER_INT;
+
+	//~ currentPCB->p_s.a2 = (unsigned int)&semDev[devNo];
+	//~ semp();
+	//~ *cmd = ((state_t *)SYSBK_OLDAREA)->a2;
 }
 
 void getpids(){
