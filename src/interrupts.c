@@ -33,6 +33,7 @@ void intHandler(){
 		else currentPCB->kernel_time += getTODLO() - checkpoint;
 		checkpoint = getTODLO();
 	}
+	// TODO: else time?????
 
 	unsigned int cause = getCAUSE();
 
@@ -159,7 +160,7 @@ void sendACK(devreg_t *device, int type, int index){
 
 
 	// if readyQueue isn't empty the scheduler get the currentPCB from readyQueue and then execute the interrupt (before LDST ?!?)
-	// I write this code because is good pratice not to write the same things in several places
+	// I write this code that use semv() because is good pratice not to write the same things in several places
 
 	if ((semDev[index]) < 0) {	// tprint don't lock any process, then we skip this
 		pcb_t * save = NULL;
