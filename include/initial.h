@@ -2,10 +2,12 @@
 #define INITIAL_H
 
 #define DEV_REAL_ADDR(addr)	( addr + ( DEV_IL_START * DEV_REGBLOCK_SIZE ))
-#define LINENO(addr)		(( DEV_REAL_ADDR(addr) - DEV_REG_START ) / DEV_REGBLOCK_SIZE )
-#define DEVICENO(addr)		((( DEV_REAL_ADDR(addr) - DEV_REG_START ) % DEV_REGBLOCK_SIZE ) / DEV_REG_SIZE )
-#define TERMTYPE(addr)		(((( DEV_REAL_ADDR(addr) - DEV_REG_START ) % DEV_REGBLOCK_SIZE ) % DEV_REG_SIZE ) / ( 2 * WS ))
-#define TERMNO(addr)		( DEVICENO(addr) + (TERMTYPE(addr) * DEV_PER_INT ))
+#define DEV_ADDR_SIZE(addr)	( DEV_REAL_ADDR(addr) - DEV_REG_START )
+#define LINENO(addr)		( DEV_ADDR_SIZE(addr) / DEV_REGBLOCK_SIZE )
+#define DEVICENO(addr)		(( DEV_ADDR_SIZE(addr) % DEV_REGBLOCK_SIZE ) / DEV_REG_SIZE )
+#define TERMNO(addr)		(( DEV_ADDR_SIZE(addr) % DEV_REGBLOCK_SIZE ) / ( DEV_REG_SIZE / 2 ))
+#define INDEVNO(termno)		( termno % 2 )
+#define TERMTYPE(termno)	( termno % 2 )
 
 typedef unsigned int memaddr;
 typedef unsigned int cpu_t;
