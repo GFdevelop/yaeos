@@ -33,7 +33,12 @@ void tlbHandler(){
 		currentPCB->p_s.a2 = (memaddr)NULL;
 		terminateprocess();
 	}
-	// TODO: else
+	else {
+		unsigned int cause = getCAUSE();
+		SVST(&currentPCB->p_s,(state_t *)sys5vector[SPECTLB]);
+		SVST((state_t *)sys5vector[SPECTLB + 3],&currentPCB->p_s);
+		setCAUSE(cause);
+	}
 	
 	scheduler();
 }
@@ -50,7 +55,12 @@ void pgmtrapHandler(){
 		currentPCB->p_s.a2 = (memaddr)NULL;
 		terminateprocess();
 	}
-	// TODO: else
+	else {
+		unsigned int cause = getCAUSE();
+		SVST(&currentPCB->p_s,(state_t *)sys5vector[SPECPGMT]);
+		SVST((state_t *)sys5vector[SPECPGMT + 3],&currentPCB->p_s);
+		setCAUSE(cause);
+	}
 	
 	scheduler();
 }
@@ -100,9 +110,17 @@ void sysbkHandler(){
 			waitchild();
 			break;
 		default:
+		//~ tprint("sys10+\n");
+			((state_t *)SYSBK_OLDAREA)->pc -= WORD_SIZE;
 			if (sys5vector[SPECSYSBP] == NULL) {
 				currentPCB->p_s.a2 = (memaddr)NULL;
 				terminateprocess();
+			}
+			else {
+				unsigned int cause = getCAUSE();
+				SVST(&currentPCB->p_s,(state_t *)sys5vector[SPECSYSBP]);
+				SVST((state_t *)sys5vector[SPECSYSBP + 3],&currentPCB->p_s);
+				setCAUSE(cause);
 			}
 	}
 	

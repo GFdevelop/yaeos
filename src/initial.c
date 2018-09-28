@@ -57,7 +57,7 @@ unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
 cpu_t checkpoint, slice, lastSlice, tick, lastTick;
 int semWaitChild;
-state_t *sys5vector[6];
+memaddr *sys5vector[6];
 
 
 void newArea(memaddr address, void handler()){
