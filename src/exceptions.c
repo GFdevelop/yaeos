@@ -20,56 +20,46 @@
 #include "interrupts.h"
 #include "scheduler.h"
 
-
-void tlbHandler(){
-	//~ tprint("tlbHandler\n");
+void trapHandler(memaddr oldArea){
 	extern pcb_t *currentPCB;
-	extern state_t *sys5vector[6];
 	
-	((state_t *)TLB_OLDAREA)->pc -= WORD_SIZE;
-	SVST((state_t *)TLB_OLDAREA, &currentPCB->p_s);
+	int type = SPECNULL;
+	switch(oldArea){
+		case SYSBK_OLDAREA: type--;
+		case TLB_OLDAREA: type--;
+		case PGMTRAP_OLDAREA: type--;
+	}
 	
-	if (sys5vector[SPECTLB] == NULL) {
+	((state_t *)oldArea)->pc -= WORD_SIZE;
+	if (type != SPECSYSBP) SVST((state_t *)oldArea, &currentPCB->p_s);
+	
+	if (currentPCB->specTrap[type] == (memaddr)NULL) {
 		currentPCB->p_s.a2 = (memaddr)NULL;
 		terminateprocess();
 	}
 	else {
 		unsigned int cause = getCAUSE();
-		SVST(&currentPCB->p_s,(state_t *)sys5vector[SPECTLB]);
-		SVST((state_t *)sys5vector[SPECTLB + 3],&currentPCB->p_s);
+		SVST(&currentPCB->p_s,(state_t *)currentPCB->specTrap[type]);
+		SVST((state_t *)currentPCB->specTrap[type + SPECNULL],&currentPCB->p_s);
 		setCAUSE(cause);
 	}
 	
 	scheduler();
 }
 
+
+void tlbHandler(){
+	trapHandler(TLB_OLDAREA);
+}
+
 void pgmtrapHandler(){
-	//~ tprint("pgmtrapHandler\n");
-	extern pcb_t *currentPCB;
-	extern state_t *sys5vector[6];
-	
-	((state_t *)PGMTRAP_OLDAREA)->pc -= WORD_SIZE;
-	SVST((state_t *)PGMTRAP_OLDAREA, &currentPCB->p_s);
-	
-	if (sys5vector[SPECPGMT] == NULL) {
-		currentPCB->p_s.a2 = (memaddr)NULL;
-		terminateprocess();
-	}
-	else {
-		unsigned int cause = getCAUSE();
-		SVST(&currentPCB->p_s,(state_t *)sys5vector[SPECPGMT]);
-		SVST((state_t *)sys5vector[SPECPGMT + 3],&currentPCB->p_s);
-		setCAUSE(cause);
-	}
-	
-	scheduler();
+	trapHandler(PGMTRAP_OLDAREA);
 }
 
 void sysbkHandler(){
 	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
 	extern cpu_t checkpoint;
-	extern state_t *sys5vector[6];
 	
 	SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	
@@ -110,18 +100,7 @@ void sysbkHandler(){
 			waitchild();
 			break;
 		default:
-		//~ tprint("sys10+\n");
-			((state_t *)SYSBK_OLDAREA)->pc -= WORD_SIZE;
-			if (sys5vector[SPECSYSBP] == NULL) {
-				currentPCB->p_s.a2 = (memaddr)NULL;
-				terminateprocess();
-			}
-			else {
-				unsigned int cause = getCAUSE();
-				SVST(&currentPCB->p_s,(state_t *)sys5vector[SPECSYSBP]);
-				SVST((state_t *)sys5vector[SPECSYSBP + 3],&currentPCB->p_s);
-				setCAUSE(cause);
-			}
+			trapHandler(SYSBK_OLDAREA);
 	}
 	
 	scheduler();

@@ -15,6 +15,7 @@
 #define SPECSYSBP 0
 #define SPECTLB 1
 #define SPECPGMT 2
+#define SPECNULL 3
 
 void createprocess();
 void terminateprocess();

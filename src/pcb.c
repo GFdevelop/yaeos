@@ -27,16 +27,6 @@ void initPcbs(){
 
 void freePcb(pcb_t *p){
 	if (p != NULL){
-		p->p_parent = NULL;
-		p->p_first_child = NULL;
-		p->p_sib = NULL;
-		p->p_priority = 0;
-		p->p_semKey = NULL;
-		
-		p->activation_time = 0;
-		p->kernel_time = 0;
-		p->user_time = 0;
-		
 		p->p_next = pcbfree_h;
 		pcbfree_h = p;
 	}
@@ -54,10 +44,11 @@ pcb_t *allocPcb(){
 		ret->p_sib = NULL;
 		ret->p_priority = 0;
 		ret->p_semKey = NULL;
-		
+		for(int i = 0; i < 6; i++) ret->specTrap[i] = (unsigned int)NULL;
 		ret->activation_time = 0;
 		ret->kernel_time = 0;
 		ret->user_time = 0;
+		
 		return ret;
 	}
 }

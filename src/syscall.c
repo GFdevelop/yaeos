@@ -124,16 +124,11 @@ void semp(){
 void spechdl(){
 	//~ tprint("spechdl\n");
 	extern pcb_t *currentPCB;
-	extern state_t *sys5vector[6];
 	
-	if(sys5vector[currentPCB->p_s.a2] != NULL) currentPCB->p_s.a1 = -1;
+	if(currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) currentPCB->p_s.a1 = -1;
 	else {
-		//~ SVST(&currentPCB->p_s,(state_t *)currentPCB->p_s.a3);
-		//~ SVST(&currentPCB->p_s,(state_t *)currentPCB->p_s.a4);
-		//~ ((state_t *)currentPCB->p_s.a3)->pc += WORD_SIZE;
-		//~ ((state_t *)currentPCB->p_s.a4)->pc += WORD_SIZE;
-		sys5vector[currentPCB->p_s.a2] = (state_t *)currentPCB->p_s.a3;
-		sys5vector[currentPCB->p_s.a2 + 3] = (state_t *)currentPCB->p_s.a4;
+		currentPCB->specTrap[currentPCB->p_s.a2] = (memaddr)currentPCB->p_s.a3;
+		currentPCB->specTrap[currentPCB->p_s.a2 + SPECNULL] = (memaddr)currentPCB->p_s.a4;
 		currentPCB->p_s.a1 = 0;
 	}
 }
