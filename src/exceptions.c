@@ -20,6 +20,8 @@
 #include "interrupts.h"
 #include "scheduler.h"
 
+
+// TODO: timing
 void trapHandler(memaddr oldArea){
 	extern pcb_t *currentPCB;
 	
@@ -30,14 +32,13 @@ void trapHandler(memaddr oldArea){
 		case PGMTRAP_OLDAREA: type--;
 	}
 	
-	((state_t *)oldArea)->pc -= WORD_SIZE;
-	if (type != SPECSYSBP) SVST((state_t *)oldArea, &currentPCB->p_s);
-	
-	if (currentPCB->specTrap[type] == (memaddr)NULL) {
+	if (currentPCB->specTrap[type + SPECNULL] == (memaddr)NULL) {
 		currentPCB->p_s.a2 = (memaddr)NULL;
 		terminateprocess();
 	}
 	else {
+		((state_t *)oldArea)->pc -= WORD_SIZE;
+		SVST((state_t *)oldArea, &currentPCB->p_s);
 		unsigned int cause = getCAUSE();
 		SVST(&currentPCB->p_s,(state_t *)currentPCB->specTrap[type]);
 		SVST((state_t *)currentPCB->specTrap[type + SPECNULL],&currentPCB->p_s);
@@ -46,7 +47,6 @@ void trapHandler(memaddr oldArea){
 	
 	scheduler();
 }
-
 
 void tlbHandler(){
 	trapHandler(TLB_OLDAREA);
@@ -63,9 +63,16 @@ void sysbkHandler(){
 	
 	SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	
-	if (currentPCB->p_s.cpsr & STATUS_USER_MODE)currentPCB->user_time += getTODLO() - checkpoint;
+	if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
 	else currentPCB->kernel_time += getTODLO() - checkpoint;
 	checkpoint = getTODLO();
+	
+	//~ if (currentPCB->p_s.cpsr == STATUS_USER_MODE) trapHandler(SYSBK_OLDAREA);
+			if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
+				SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
+				((state_t *)PGMTRAP_OLDAREA)->CP15_Cause = CAUSE_EXCCODE_SET(currentPCB->p_s.CP15_Cause, EXC_RESERVEDINSTR);
+				pgmtrapHandler();
+			}
 	
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
@@ -100,7 +107,14 @@ void sysbkHandler(){
 			waitchild();
 			break;
 		default:
-			trapHandler(SYSBK_OLDAREA);
+			if (currentPCB->specTrap[SPECSYSBP + SPECNULL] == (memaddr)NULL) {
+				currentPCB->p_s.a2 = (memaddr)NULL;
+				terminateprocess();
+			}
+			else {
+				SVST(&currentPCB->p_s,(state_t *)currentPCB->specTrap[SPECSYSBP]);
+				SVST((state_t *)currentPCB->specTrap[SPECSYSBP + SPECNULL],&currentPCB->p_s);
+			}
 	}
 	
 	scheduler();
