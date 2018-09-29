@@ -40,33 +40,30 @@ void createprocess(){
 	}
 }
 
-void terminator(pcb_t *head, pcb_t *tmp){
+void terminator(pcb_t *head){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount, softBlock;
 	extern int semDev[MAX_DEVICES];
 	extern int semWaitChild;
 	
-	if (tmp == NULL) tmp = head;
+	if (head->p_first_child != NULL) terminator(head->p_first_child);
 	
-	if (tmp->p_first_child != NULL) terminator(tmp->p_first_child, tmp);
-	if ((tmp->p_sib != NULL) && (tmp != head)) terminator(tmp->p_sib, tmp);
-	
-	if (tmp->p_semKey != NULL) {
-		if ((tmp->p_semKey >= &semDev[0]) && (tmp->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
-		if((*tmp->p_semKey) < 0) (*tmp->p_semKey)++;
-		outChildBlocked(tmp);
+	if (head->p_semKey != NULL) {
+		if ((head->p_semKey >= &semDev[0]) && (head->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
+		if((*head->p_semKey) < 0) (*head->p_semKey)++;
+		outChildBlocked(head);
 	}
-	else if (tmp != currentPCB) outProcQ(&readyQueue, tmp);
+	else if (head != currentPCB) outProcQ(&readyQueue, head);
 	else currentPCB = NULL;
 	
-	if ((tmp->p_parent != NULL) && (tmp->p_parent->p_semKey == &semWaitChild)) {
-		outChildBlocked(tmp->p_parent);
-		insertProcQ(&readyQueue,tmp->p_parent);
+	if ((head->p_parent != NULL) && (head->p_parent->p_semKey == &semWaitChild)) {
+		outChildBlocked(head->p_parent);
+		insertProcQ(&readyQueue,head->p_parent);
 		semWaitChild++;
 	}
 	
-	outChild(tmp);
-	freePcb(tmp);
+	outChild(head);
+	freePcb(head);
 	processCount--;
 }
 
@@ -79,11 +76,11 @@ void terminateprocess(){	// TODO: terminateprocess was rewrited, I have to work 
 	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
 	else head = (pcb_t *)currentPCB->p_s.a2;
 	
-	terminator(head, NULL);
+	terminator(head);
 	
-	if ((currentPCB != NULL) && (head->p_parent != NULL)) {
-		currentPCB->p_s.a1 = 0;
-	}
+	// TODO: are right?!?!?
+	if ((currentPCB != NULL) && (head->p_parent != NULL)) currentPCB->p_s.a1 = 0;
+	//~ else currentPCB->p_s.a1 = -1;
 }
 
 void semv(){
