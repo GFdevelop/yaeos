@@ -14,9 +14,10 @@ typedef struct pcb_t {
 	int p_priority;
 	int *p_semKey;
 	
-	unsigned int activation_time;	
-	unsigned int kernel_time;	
-	unsigned int user_time;	
+	unsigned int specTrap[6];
+	unsigned int activation_time;
+	unsigned int kernel_time;
+	unsigned int user_time;
 }pcb_t;
 
 /**** PCB queue management ****/

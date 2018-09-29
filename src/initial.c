@@ -30,7 +30,6 @@ unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
 cpu_t checkpoint, slice, lastSlice, tick, lastTick;
 int semWaitChild;
-state_t *sys5vector[6];
 
 void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
@@ -59,7 +58,6 @@ int main() {
 
 	//~ tprint("init semaphores\n");
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
-	for(int i = 0; i < 6; i++) sys5vector[i] = NULL;
 	semWaitChild = 0;
 
 	//~ tprint("create first pcb\n");
