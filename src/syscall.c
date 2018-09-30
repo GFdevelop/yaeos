@@ -24,7 +24,6 @@
 
 
 void createprocess(){
-	//~ tprint("createprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount;
 	pcb_t *childPCB = allocPcb();
@@ -49,7 +48,7 @@ void terminator(pcb_t *head){
 	if (head->p_first_child != NULL) terminator(head->p_first_child);
 	
 	if (head->p_semKey != NULL) {
-		if ((head->p_semKey >= &semDev[0]) && (head->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
+		if ((head->p_semKey >= &semDev[0]) && (head->p_semKey <= &semDev[MAX_DEVICES - 1])) softBlock--;
 		if((*head->p_semKey) < 0) (*head->p_semKey)++;
 		outChildBlocked(head);
 	}
@@ -67,8 +66,7 @@ void terminator(pcb_t *head){
 	processCount--;
 }
 
-void terminateprocess(){	// TODO: terminateprocess was rewrited, I have to work on it
-	//~ tprint("terminateprocess\n");
+void terminateprocess(){
 	extern pcb_t *currentPCB;
 	
 	pcb_t *head;
@@ -78,9 +76,10 @@ void terminateprocess(){	// TODO: terminateprocess was rewrited, I have to work 
 	
 	terminator(head);
 	
-	// TODO: are right?!?!?
-	if ((currentPCB != NULL) && (head->p_parent != NULL)) currentPCB->p_s.a1 = 0;
-	//~ else currentPCB->p_s.a1 = -1;
+	if (currentPCB != NULL) {
+		if (head == NULL) currentPCB->p_s.a1 = 0;
+		else currentPCB->p_s.a1 = -1;
+	}
 }
 
 void semv(){
@@ -119,7 +118,6 @@ void semp(){
 }
 
 void spechdl(){
-	//~ tprint("spechdl\n");
 	extern pcb_t *currentPCB;
 	
 	if(currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) currentPCB->p_s.a1 = -1;
@@ -131,7 +129,6 @@ void spechdl(){
 }
 
 void gettime(){
-	//~ tprint("gettime\n");
 	extern pcb_t *currentPCB;
 	extern cpu_t checkpoint;
 	
@@ -144,7 +141,6 @@ void gettime(){
 
 
 void waitclock(){
-	//~ tprint("waitclock\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	extern unsigned int softBlock;
@@ -154,7 +150,6 @@ void waitclock(){
 }
 
 void iodevop(){
-	//~ tprint("iodevop\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
 	//~ memaddr *cmd;
@@ -190,15 +185,12 @@ void iodevop(){
 }
 
 void getpids(){
-	//~ tprint("getpids\n");
 	extern pcb_t *currentPCB;
-	if (currentPCB->p_parent == NULL) {
-		//~ tprint("root\n");
+	if (currentPCB->p_parent == NULL) {	// root
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = NULL;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;
 	}
-	else {
-		//~ tprint("process\n");
+	else {	// one process
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = currentPCB;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) {
 			if (currentPCB->p_parent->p_parent == NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;	//if parent is root
@@ -208,8 +200,6 @@ void getpids(){
 }
 
 void waitchild(){
-	//~ tprint("waitchild\n");
-	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;
 	if (currentPCB->p_first_child != NULL){

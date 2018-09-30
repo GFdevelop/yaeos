@@ -21,7 +21,6 @@
 #include "syscall.h"
 
 void intHandler(){
-	//~ tprint("intHandler\n");
 	extern pcb_t *currentPCB;
 	extern cpu_t checkpoint;
 	
@@ -50,7 +49,6 @@ void intHandler(){
 }
 
 void timer_HDL(){
-	//~ tprint("timer_HDL\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
 	extern cpu_t checkpoint, slice, lastSlice, tick, lastTick;
@@ -82,7 +80,6 @@ void device_HDL(){
 }
 
 void terminal_HDL(){
-	//~ tprint ("terminal_HDL\n");
 	devreg_t *term;
 	unsigned int terminal_no = 0;
 

@@ -70,26 +70,21 @@ void newArea(memaddr address, void handler()){
 
 
 int main() {
-	//~ tprint("init NEW area\n");
 	newArea(INT_NEWAREA,intHandler);
 	newArea(TLB_NEWAREA,tlbHandler);
 	newArea(PGMTRAP_NEWAREA,pgmtrapHandler);
 	newArea(SYSBK_NEWAREA,sysbkHandler);
 	
-	//~ tprint("init pcb and asl\n");
 	initPcbs();
 	initASL();
 	
-	//~ tprint("init variables\n");
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
 	
-	//~ tprint("init semaphores\n");
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
 	
-	//~ tprint("create first pcb\n");
 	readyQueue = allocPcb();
 	readyQueue->p_priority = 0;
 	readyQueue->p_s.cpsr = STATUS_SYS_MODE;
@@ -103,7 +98,6 @@ int main() {
 	tick = TICK_TIME;
 	lastSlice = lastTick = getTODLO();
 	
-	//~ tprint("call scheduler\n");
 	scheduler();
 	
 	return 0;

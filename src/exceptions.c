@@ -57,7 +57,6 @@ void pgmtrapHandler(){
 }
 
 void sysbkHandler(){
-	//~ tprint("sysbkHandler\n");
 	extern pcb_t *currentPCB;
 	extern cpu_t checkpoint;
 	
@@ -67,12 +66,11 @@ void sysbkHandler(){
 	else currentPCB->kernel_time += getTODLO() - checkpoint;
 	checkpoint = getTODLO();
 	
-	//~ if (currentPCB->p_s.cpsr == STATUS_USER_MODE) trapHandler(SYSBK_OLDAREA);
-			if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
-				SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
-				((state_t *)PGMTRAP_OLDAREA)->CP15_Cause = CAUSE_EXCCODE_SET(currentPCB->p_s.CP15_Cause, EXC_RESERVEDINSTR);
-				pgmtrapHandler();
-			}
+	if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
+		SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
+		((state_t *)PGMTRAP_OLDAREA)->CP15_Cause = CAUSE_EXCCODE_SET(currentPCB->p_s.CP15_Cause, EXC_RESERVEDINSTR);
+		pgmtrapHandler();
+	}
 	
 	
 	switch(((state_t *)SYSBK_OLDAREA)->a1){
