@@ -24,15 +24,12 @@ void intHandler(){
 	extern pcb_t *currentPCB;
 	extern cpu_t checkpoint;
 	
+	checkpoint = getTODLO();
+	
 	if (currentPCB != NULL) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
-		
-		if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
-		else currentPCB->kernel_time += getTODLO() - checkpoint;
-		checkpoint = getTODLO();
 	}
-	// TODO: else time?????
 
 	unsigned int cause = getCAUSE();
 
@@ -51,12 +48,17 @@ void intHandler(){
 void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t checkpoint, slice, lastSlice, tick, lastTick;
+	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
 	
 	if (getTODLO() >= (lastSlice + slice)){
 		if (currentPCB){
+			if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += checkpoint - lastRecord;
+			else currentPCB->kernel_time += checkpoint - lastRecord;
+			currentPCB->kernel_time += getTODLO() - checkpoint;
+			lastRecord = checkpoint = getTODLO();
+			
 			insertProcQ(&readyQueue, currentPCB);
-			currentPCB = NULL;
+			currentPCB = NULL;	// TODO: this can break pseudo clock, read down
 		}
 		slice = (lastSlice + (2 * SLICE_TIME)) - getTODLO();
 		lastSlice = getTODLO();
@@ -64,14 +66,13 @@ void timer_HDL(){
 	
 	if (getTODLO() >= (lastTick + tick)){
 		while ((semDev[CLOCK_SEM]) < 0) {
-			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
+			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];	// TODO: if currentPCB is NULL??? change semv()
 			semv();
 		}
 		tick = (lastTick + (2 * TICK_TIME)) - getTODLO();
 		lastTick = getTODLO();
 	}
 	
-	checkpoint = getTODLO();
 	setTIMER(MIN(slice, tick));
 }
 
@@ -140,6 +141,7 @@ unsigned int instanceNo(unsigned int device){
 void sendACK(devreg_t *device, int type, int index){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
+	extern cpu_t checkpoint, lastRecord;
 	
 	switch (type) {
 		case TRANSM:
@@ -161,12 +163,17 @@ void sendACK(devreg_t *device, int type, int index){
 	// I write this code that use semv() because is good pratice not to write the same things in several places
 	
 	if ((semDev[index]) < 0) {	// tprint don't lock any process, then we skip this
-		pcb_t * save = NULL;
-		if (currentPCB) save = currentPCB;	// there is a process that start after this interrupt
+		pcb_t *save = currentPCB;	// there is a process that start after this interrupt
 		currentPCB = headBlocked(&semDev[index]);
 		currentPCB->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
 		currentPCB->p_s.a2 = (unsigned int)&semDev[index];	// set value for semv()
 		semv();
+		
+		if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
+		else currentPCB->kernel_time += getTODLO() - checkpoint;
+		
+		lastRecord = checkpoint = getTODLO();
+		
 		currentPCB = save;	// restore
 	}
 }

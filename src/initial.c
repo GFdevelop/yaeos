@@ -55,7 +55,7 @@
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
-cpu_t checkpoint, slice, lastSlice, tick, lastTick;
+cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
 int semWaitChild;
 
 
@@ -93,10 +93,9 @@ int main() {
 	readyQueue->p_s.sp = RAM_TOP-FRAME_SIZE;
 	readyQueue->p_s.pc = (memaddr)test;
 	
-	//~ checkpoint = getTODLO();
 	slice = SLICE_TIME;
 	tick = TICK_TIME;
-	lastSlice = lastTick = getTODLO();
+	checkpoint = lastRecord = lastSlice = lastTick = getTODLO();
 	
 	scheduler();
 	

@@ -47,22 +47,36 @@ void trapHandler(memaddr oldArea){
 }
 
 void tlbHandler(){
+	extern pcb_t *currentPCB;
+	extern cpu_t checkpoint, lastRecord;
+	
+	if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
+	else currentPCB->kernel_time += getTODLO() - checkpoint;
+	lastRecord = checkpoint = getTODLO();
+	
 	trapHandler(TLB_OLDAREA);
 }
 
 void pgmtrapHandler(){
+	extern pcb_t *currentPCB;
+	extern cpu_t checkpoint, lastRecord;
+	
+	if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
+	else currentPCB->kernel_time += getTODLO() - checkpoint;
+	lastRecord = checkpoint = getTODLO();
+	
 	trapHandler(PGMTRAP_OLDAREA);
 }
 
 void sysbkHandler(){
 	extern pcb_t *currentPCB;
-	extern cpu_t checkpoint;
+	extern cpu_t checkpoint, lastRecord;
 	
 	SVST((state_t *)SYSBK_OLDAREA, &currentPCB->p_s);
 	
-	if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
+	if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
 	else currentPCB->kernel_time += getTODLO() - checkpoint;
-	checkpoint = getTODLO();
+	lastRecord = checkpoint = getTODLO();
 	
 	if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
 		SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
@@ -79,7 +93,7 @@ void sysbkHandler(){
 			terminateprocess();
 			break;
 		case(SEMV):
-			semv(((state_t *)SYSBK_OLDAREA)->a2);
+			semv();
 			break;
 		case(SEMP):
 			semp();
