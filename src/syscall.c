@@ -155,11 +155,11 @@ void iodevop(){
 	//~ memaddr *cmd;
 	
 	int lineNo = LINENO(currentPCB->p_s.a3);
-	int devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT;
+	int devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT;				// TODO: device are not 49, 49 is timer!!!
 	devNo += ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
 	
-	// TODO: device not ready
-	*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
+	/*if ((*((memaddr *)currentPCB->p_s.a3 - 1)) != DEV_S_READY) currentPCB->p_s.pc -= WORD_SIZE;		// -1 is status field
+	else */*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
 	
 	currentPCB->p_s.a2 = (memaddr)&semDev[devNo];
 	semp();
