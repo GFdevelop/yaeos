@@ -10,10 +10,12 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
-#include "libuarm.h"
+#include <libuarm.h>
 #include <arch.h>
+
 #include "pcb.h"
 #include "asl.h"
+
 #include "initial.h"
 #include "syscall.h"
 #include "exceptions.h"
@@ -25,24 +27,20 @@
 void trapHandler(memaddr oldArea){
 	extern pcb_t *currentPCB;
 	
-	int type = SPECNULL;
-	switch(oldArea){
+	int type = SPECNEW;
+	switch (oldArea){
 		case SYSBK_OLDAREA: type--;
 		case TLB_OLDAREA: type--;
 		case PGMTRAP_OLDAREA: type--;
 	}
 	
-	if (currentPCB->specTrap[type + SPECNULL] == (memaddr)NULL) {
+	if (currentPCB->specTrap[type] == (memaddr)NULL) {
 		currentPCB->p_s.a2 = (memaddr)NULL;
 		terminateprocess();
 	}
 	else {
-		((state_t *)oldArea)->pc -= WORD_SIZE;
-		SVST((state_t *)oldArea, &currentPCB->p_s);
-		unsigned int cause = getCAUSE();
-		SVST(&currentPCB->p_s,(state_t *)currentPCB->specTrap[type]);
-		SVST((state_t *)currentPCB->specTrap[type + SPECNULL],&currentPCB->p_s);
-		setCAUSE(cause);
+		SVST((state_t *)oldArea, (state_t *)currentPCB->specTrap[type]);
+		SVST((state_t *)currentPCB->specTrap[type + SPECNEW], &currentPCB->p_s);
 	}
 	
 	scheduler();
@@ -105,14 +103,7 @@ void sysbkHandler(){
 			waitchild();
 			break;
 		default:
-			if (currentPCB->specTrap[SPECSYSBP + SPECNULL] == (memaddr)NULL) {
-				currentPCB->p_s.a2 = (memaddr)NULL;
-				terminateprocess();
-			}
-			else {
-				SVST(&currentPCB->p_s,(state_t *)currentPCB->specTrap[SPECSYSBP]);
-				SVST((state_t *)currentPCB->specTrap[SPECSYSBP + SPECNULL],&currentPCB->p_s);
-			}
+			trapHandler(SYSBK_OLDAREA);
 	}
 	
 	scheduler();

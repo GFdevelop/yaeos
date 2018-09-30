@@ -85,9 +85,9 @@ void terminal_HDL(){
 
 	terminal_no = instanceNo(INT_TERMINAL);
 	
-	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	term = (devreg_t *)DEV_REG_ADDR(INT_TERMINAL, terminal_no);
 	
+	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	if((term->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
 		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no + 1);	// odd for transm
 	}else if((term->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){

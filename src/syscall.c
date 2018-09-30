@@ -10,6 +10,8 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
+#include <uARMconst.h>
+#include <uARMtypes.h>
 #include <libuarm.h>
 #include <arch.h>
 
@@ -120,10 +122,13 @@ void semp(){
 void spechdl(){
 	extern pcb_t *currentPCB;
 	
-	if(currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) currentPCB->p_s.a1 = -1;
+	if ((currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) ||
+		(currentPCB->p_s.a3 == (memaddr)NULL) || (currentPCB->p_s.a4 == (memaddr)NULL)) {
+		currentPCB->p_s.a1 = -1;
+	}
 	else {
-		currentPCB->specTrap[currentPCB->p_s.a2] = (memaddr)currentPCB->p_s.a3;
-		currentPCB->specTrap[currentPCB->p_s.a2 + SPECNULL] = (memaddr)currentPCB->p_s.a4;
+		currentPCB->specTrap[currentPCB->p_s.a2] = currentPCB->p_s.a3;
+		currentPCB->specTrap[currentPCB->p_s.a2 + SPECNEW] = currentPCB->p_s.a4;
 		currentPCB->p_s.a1 = 0;
 	}
 }
@@ -155,13 +160,12 @@ void iodevop(){
 	//~ memaddr *cmd;
 	
 	int lineNo = LINENO(currentPCB->p_s.a3);
-	int devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT;				// TODO: device are not 49, 49 is timer!!!
-	devNo += ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
+	int devNo = ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
 	
 	/*if ((*((memaddr *)currentPCB->p_s.a3 - 1)) != DEV_S_READY) currentPCB->p_s.pc -= WORD_SIZE;		// -1 is status field
 	else */*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
 	
-	currentPCB->p_s.a2 = (memaddr)&semDev[devNo];
+	currentPCB->p_s.a2 = (memaddr)&semDev[EXT_IL_INDEX(lineNo) * DEV_PER_INT + devNo];
 	semp();
 	
 	
