@@ -40,6 +40,9 @@ state_t p5state;
 state_t p6state;
 state_t p7state;
 void *p1p1addr, *p1p0addr;
+
+int p3inc;
+
 void print(char *msg) {
 	unsigned int status;
 	SYSCALL(SEMP, (memaddr)&term_mutex, 0, 0);
@@ -57,9 +60,7 @@ void print(char *msg) {
 
 memaddr get_stack_area(void) {
 	memaddr ret_value;
-	tprint("test1\n");
 	SYSCALL(SEMP, (memaddr)&stack_mutex, 0, 0);
-	tprint("test2\n");
 	ret_value = next_stack;
 	next_stack -= QPAGE;
 	SYSCALL(SEMV, (memaddr)&stack_mutex, 0, 0);
@@ -117,7 +118,7 @@ void p2(void) {
 }
 
 void p3(void) {
-	int p3inc=0;
+	//~ int p3inc=0;
 	switch (p3inc++) {
 		case 0:
 			print("p3: first incarnation\n");
@@ -128,7 +129,7 @@ void p3(void) {
 	}
 	SYSCALL(SEMV, (memaddr)&synp3, 0, 0);
 	SYSCALL(SEMP, (memaddr)&blkp3, 0, 0);
-	SYSCALL(SEMP, (memaddr)&synp3, 0, 0);
+	//~ SYSCALL(SEMP, (memaddr)&synp3, 0, 0);
 
 	if (p3inc > 2) {
 		print("error: second incarnation of p3 did not terminate\n");
@@ -140,7 +141,7 @@ void p3(void) {
 
 	SYSCALL(SEMP, (memaddr)&synp3, 0, 0);
 
-	SYSCALL(SEMP, (memaddr)&endp3, 0, 0);
+	//~ SYSCALL(SEMP, (memaddr)&endp3, 0, 0);
 	SYSCALL(TERMINATEPROCESS, 0, 0, 0);
 	print("P3 survived a terminate process syscall\n");
 	PANIC();

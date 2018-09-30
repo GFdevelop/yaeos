@@ -29,7 +29,7 @@ void intHandler(){
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
 		SVST((state_t *)INT_OLDAREA, &currentPCB->p_s);
 
-		if (currentPCB->p_s.cpsr & STATUS_USER_MODE)currentPCB->user_time += getTODLO() - checkpoint;
+		if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
 		else currentPCB->kernel_time += getTODLO() - checkpoint;
 		checkpoint = getTODLO();
 	}
