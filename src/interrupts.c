@@ -34,7 +34,6 @@ void intHandler(){
 	unsigned int cause = getCAUSE();
 
 	if(CAUSE_IP_GET(cause, INT_TIMER)) timer_HDL();
-	else if(CAUSE_IP_GET(cause, INT_LOWEST)) device_HDL(INT_LOWEST);
 	else if(CAUSE_IP_GET(cause, INT_DISK)) device_HDL(INT_DISK);
 	else if(CAUSE_IP_GET(cause, INT_TAPE)) device_HDL(INT_TAPE);
 	else if(CAUSE_IP_GET(cause, INT_UNUSED)) device_HDL(INT_UNUSED);
@@ -87,8 +86,11 @@ void timer_HDL(){
 	setTIMER(MIN(slice, tick));
 }
 
-void device_HDL(){
-	//
+void device_HDL(int deviceType){
+	unsigned int device_no = instanceNo(deviceType);
+	devreg_t *dev = DEV_REG_ADDR(deviceType,device_no);
+
+	sendACK(dev, GENERIC, EXT_IL_INDEX(deviceType) * DEV_PER_INT +  device_no);
 }
 
 void terminal_HDL(){
