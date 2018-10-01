@@ -44,7 +44,6 @@ void intHandler(){
 	scheduler();
 }
 
-void debugger(){}
 void incrementpriority(pcb_t * p){
 	if (p != NULL){
 		if (p->p_priority < 10) p->p_priority += 1;
@@ -71,10 +70,6 @@ void timer_HDL(){
 	}
 
 	if (getTODLO() >= (lastTick + tick)){
-		debugger();//ripassa sempre qua infinite volte, perchè?
-		pcb_t * p = currentPCB;
-		incrementpriority(p);
-
 		while ((semDev[CLOCK_SEM]) < 0) {
 			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];	// TODO: if currentPCB is NULL??? change semv()
 			semv();

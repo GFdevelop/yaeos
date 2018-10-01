@@ -88,22 +88,6 @@ void p1a(void) {
 	PANIC();
 }
 
-void printint_(int a){
-	int b = a%10;
-    a = a/10;
-    if (a>0) printint_(a);
-    if (b==0) {tprint("0");} else if (b==1) {tprint("1");}
-    else if (b==2) {tprint("2");} else if (b==3) {tprint("3");}
-    else if (b==4) {tprint("4");} else if (b==5) {tprint("5");}
-    else if (b==6) {tprint("6");} else if (b==7) {tprint("7");}
-    else if (b==8) {tprint("8");} else if (b==9) {tprint("9");}
-}
-void printint(int a){
-	if (a<0) {tprint("-"); a = -a;}
-    printint_(a);
-	tprint("\n");
-}
-
 void p2(void) {
 	cpu_t time1, time2;
 	cpu_t usr_t1, kernel_t1, wall_t1;
@@ -121,17 +105,6 @@ void p2(void) {
 	SYSCALL(GETTIME, (memaddr)&usr_t2, (memaddr)&kernel_t2, (memaddr)&wall_t2);
 
 	//SYSCALL(GETTIME, (int)&glob_t2, (int)&usr_t2, 0);    /* process time */
-	tprint("user_time:\n");
-	printint(usr_t1);
-	printint(usr_t1);
-
-	tprint("kernel_time:\n");
-	printint(kernel_t1);
-	printint(kernel_t2);
-
-	tprint("wall_time:\n");
-	printint(wall_t1);
-	printint(wall_t2);
 
 	if (((usr_t2 - usr_t1) > MINCLOCKLOOP) || ((usr_t2 + kernel_t2 - usr_t1 - kernel_t1) < MINCLOCKLOOP) ||
 			(usr_t2 + kernel_t2 - usr_t1 - kernel_t1) > (wall_t2 - wall_t1))

@@ -173,7 +173,6 @@ void waitclock(){
 	//~ tprint("waitclock\n");
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	extern unsigned int softBlock;//serve?
 
 	currentPCB->p_s.a2 = (memaddr)&semDev[CLOCK_SEM];
 	semp();
@@ -235,7 +234,6 @@ void getpids(){
 
 void waitchild(){
 	//~ tprint("waitchild\n");
-	extern unsigned int softBlock;
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;
 	if (currentPCB->p_first_child != NULL){
