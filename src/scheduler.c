@@ -18,7 +18,7 @@
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, aging, lastAging;
+	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick, aging, lastAging;
 	
 	if (processCount) {
 		if (currentPCB == NULL) {
@@ -45,7 +45,7 @@ void scheduler(){
 		else currentPCB->kernel_time += getTODLO() - checkpoint; //Process returning from a syscall or interrupt. Kernel time accounting.
 		
 		lastRecord = checkpoint = getTODLO(); //Time vars update 
-		setTIMER(MIN(slice, tick)); //Setting the actual next slice
+		setTIMER(MIN(slice, (lastTick + tick) - getTODLO())); //Setting the actual next slice
 		
 		LDST(&currentPCB->p_s);
 	}
