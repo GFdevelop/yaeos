@@ -28,9 +28,10 @@
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
-cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
+cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick, aging, lastAging;
 int semWaitChild;
 
+/* --- AUXILIARY FUNCTION --- */
 void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
@@ -41,21 +42,22 @@ void newArea(memaddr address, void handler()){
 }
 
 int main() {
+	//1. New areas initialization
 	newArea(INT_NEWAREA,intHandler);
 	newArea(TLB_NEWAREA,tlbHandler);
 	newArea(PGMTRAP_NEWAREA,pgmtrapHandler);
 	newArea(SYSBK_NEWAREA,sysbkHandler);
-
+	//2. Phase1 data structures initialization
 	initPcbs();
 	initASL();
-
+	//3. System vars initialization
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
 
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
-
+	//4. First process creation
 	readyQueue = allocPcb();
 	readyQueue->p_priority = 0;
 	readyQueue->p_s.cpsr = STATUS_SYS_MODE;
@@ -63,11 +65,12 @@ int main() {
 	readyQueue->p_s.CP15_Control = CP15_CONTROL_NULL;
 	readyQueue->p_s.sp = RAM_TOP-FRAME_SIZE;
 	readyQueue->p_s.pc = (memaddr)test;
-
+	//5. Time vars initialization
 	slice = SLICE_TIME;
 	tick = TICK_TIME;
-	checkpoint = lastRecord = lastSlice = lastTick = getTODLO();
-
+	aging = AGING_TIME;
+	checkpoint = lastRecord = lastSlice = lastTick = lastAging = getTODLO();
+	//6. ...enjoy!
 	scheduler();
 
 	return 0;

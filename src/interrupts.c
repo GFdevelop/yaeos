@@ -45,12 +45,6 @@ void intHandler(){
 	scheduler();
 }
 
-void incrementpriority(pcb_t * p){
-	if (p != NULL){
-		if (p->p_priority < 10) p->p_priority += 1;
-		incrementpriority(p->p_next);
-	}
-}
 void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
@@ -60,6 +54,7 @@ void timer_HDL(){
 		if (currentPCB){
 			if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += checkpoint - lastRecord;
 			else currentPCB->kernel_time += checkpoint - lastRecord;
+			currentPCB->kernel_time += getTODLO() - checkpoint;
 
 			insertProcQ(&readyQueue, currentPCB);
 			currentPCB = NULL;
@@ -95,9 +90,9 @@ void terminal_HDL(){
 
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	if((term->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no + 1);	// odd for transm
+		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + (terminal_no*2) + 1);	// odd for transm
 	}else if((term->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);		// even for recv
+		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + (terminal_no*2));		// even for recv
 	}
 }
 
@@ -143,7 +138,9 @@ unsigned int instanceNo(unsigned int device){
 
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type
 void sendACK(devreg_t *device, int type, int index){
+	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
+	extern cpu_t checkpoint, lastRecord;
 
 	switch (type) {
 		case TRANSM:
@@ -161,8 +158,18 @@ void sendACK(devreg_t *device, int type, int index){
 	}
 
 
-	if ((semDev[index]) < 0) {	// tprint don't lock any process, then we skip this
-		headBlocked(&semDev[index])->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
+	if ((semDev[index]) < 0) {	// fast interrupt (tprint) don't lock any process, then we skip this
+		pcb_t *blocked = headBlocked(&semDev[index]);
+		blocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
+
+		if ((blocked->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) blocked->user_time += getTODLO() - checkpoint;
+		else blocked->kernel_time += getTODLO() - checkpoint;
+
 		semv((memaddr)&semDev[index]);
+	}
+	else {
+		if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += checkpoint - lastRecord;
+		else currentPCB->kernel_time += checkpoint - lastRecord;
+		currentPCB->kernel_time += getTODLO() - checkpoint;
 	}
 }
