@@ -10,6 +10,8 @@
  * * * * * * * * * * * * * * * * * * * * * * * * */
 
 
+#include <uARMconst.h>
+#include <uARMtypes.h>
 #include <libuarm.h>
 #include <arch.h>
 
@@ -24,7 +26,6 @@
 
 
 void createprocess(){
-	//~ tprint("createprocess\n");
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount;
 	pcb_t *childPCB = allocPcb();
@@ -49,7 +50,7 @@ void terminator(pcb_t *head){
 	if (head->p_first_child != NULL) terminator(head->p_first_child);
 
 	if (head->p_semKey != NULL) {
-		if ((head->p_semKey >= &semDev[0]) && (head->p_semKey <= &semDev[MAX_DEVICES])) softBlock--;
+		if ((head->p_semKey >= &semDev[0]) && (head->p_semKey <= &semDev[MAX_DEVICES - 1])) softBlock--;
 		if((*head->p_semKey) < 0) (*head->p_semKey)++;
 		outChildBlocked(head);
 	}
@@ -67,8 +68,7 @@ void terminator(pcb_t *head){
 	processCount--;
 }
 
-void terminateprocess(){	// TODO: terminateprocess was rewrited, I have to work on it
-	//~ tprint("terminateprocess\n");
+void terminateprocess(){
 	extern pcb_t *currentPCB;
 
 	pcb_t *head;
@@ -78,25 +78,22 @@ void terminateprocess(){	// TODO: terminateprocess was rewrited, I have to work 
 
 	terminator(head);
 
-	// TODO: are right?!?!?
-	if ((currentPCB != NULL) && (head->p_parent != NULL)) currentPCB->p_s.a1 = 0;
-	//~ else currentPCB->p_s.a1 = -1;
+	if (currentPCB != NULL) {
+		if (head == NULL) currentPCB->p_s.a1 = 0;
+		else currentPCB->p_s.a1 = -1;
+	}
 }
 
 void semv(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t checkpoint;
 
 	int *value = (int *)currentPCB->p_s.a2;
 	if ((*value)++ < 1) {
 		pcb_t *tmp = removeBlocked(value);
 		insertProcQ(&readyQueue, tmp);
 		if ((value >= semDev) && (value <= &semDev[MAX_DEVICES - 1])) softBlock--;
-
-		currentPCB->kernel_time += getTODLO() - checkpoint;
-		checkpoint = getTODLO();
 	}
 }
 
@@ -104,7 +101,7 @@ void semp(){
 	extern pcb_t *currentPCB;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t checkpoint;
+	extern cpu_t checkpoint, lastRecord;
 
 	int *value = (int *)currentPCB->p_s.a2;
 	if (--(*value) < 0) {
@@ -112,30 +109,32 @@ void semp(){
 		if ((value >= semDev) && (value <= &semDev[MAX_DEVICES - 1])) softBlock++;
 
 		currentPCB->kernel_time += getTODLO() - checkpoint;
-		checkpoint = getTODLO();
+		lastRecord = checkpoint = getTODLO();
 
 		currentPCB = NULL;
 	}
 }
 
 void spechdl(){
-	//~ tprint("spechdl\n");
 	extern pcb_t *currentPCB;
 
-	if(currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) currentPCB->p_s.a1 = -1;
+	if ((currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) ||
+		(currentPCB->p_s.a3 == (memaddr)NULL) || (currentPCB->p_s.a4 == (memaddr)NULL)) {
+		currentPCB->p_s.a1 = -1;
+	}
 	else {
-		currentPCB->specTrap[currentPCB->p_s.a2] = (memaddr)currentPCB->p_s.a3;
-		currentPCB->specTrap[currentPCB->p_s.a2 + SPECNULL] = (memaddr)currentPCB->p_s.a4;
+		currentPCB->specTrap[currentPCB->p_s.a2] = currentPCB->p_s.a3;
+		currentPCB->specTrap[currentPCB->p_s.a2 + SPECNEW] = currentPCB->p_s.a4;
 		currentPCB->p_s.a1 = 0;
 	}
 }
 
 void gettime(){
-	//~ tprint("gettime\n");
 	extern pcb_t *currentPCB;
-	extern cpu_t checkpoint;
+	extern cpu_t checkpoint, lastRecord;
 
 	currentPCB->kernel_time += getTODLO() - checkpoint;
+	lastRecord = checkpoint = getTODLO();
 
 	*(cpu_t *)currentPCB->p_s.a2 = currentPCB->user_time;
 	*(cpu_t *)currentPCB->p_s.a3 = currentPCB->kernel_time;
@@ -158,13 +157,12 @@ void iodevop(){
 	//~ memaddr *cmd;
 
 	int lineNo = LINENO(currentPCB->p_s.a3);
-	int devNo = EXT_IL_INDEX(lineNo) * DEV_PER_INT;
-	devNo += ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
+	int devNo = ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
 
-	// TODO: device not ready
-	*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
+	/*if ((*((memaddr *)currentPCB->p_s.a3 - 1)) != DEV_S_READY) currentPCB->p_s.pc -= WORD_SIZE;		// -1 is status field
+	else */*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
 
-	currentPCB->p_s.a2 = (memaddr)&semDev[devNo];
+	currentPCB->p_s.a2 = (memaddr)&semDev[EXT_IL_INDEX(lineNo) * DEV_PER_INT + devNo];
 	semp();
 
 
@@ -189,10 +187,11 @@ void iodevop(){
 
 void getpids(){
 	extern pcb_t *currentPCB;
-	if (currentPCB->p_parent == NULL) { /* root */
+	if (currentPCB->p_parent == NULL) {	// root
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = NULL;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;
-	} else { /* process */
+	}
+	else {	// one process
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = currentPCB;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) {
 			if (currentPCB->p_parent->p_parent == NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;	//if parent is root
