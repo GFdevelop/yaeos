@@ -49,6 +49,13 @@ void intHandler(){
 	scheduler();
 }
 
+void debugger(){}
+void incrementpriority(pcb_t * p){
+	if (p != NULL){
+		if (p->p_priority < 10) p->p_priority += 1;
+		incrementpriority(p->p_next);
+	}
+}
 void timer_HDL(){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
@@ -64,6 +71,10 @@ void timer_HDL(){
 	}
 
 	if (getTODLO() >= (lastTick + tick)){
+		debugger();//ripassa sempre qua infinite volte, perchè?
+		pcb_t * p = currentPCB;
+		incrementpriority(p);
+
 		while ((semDev[CLOCK_SEM]) < 0) {
 			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];
 			semv();

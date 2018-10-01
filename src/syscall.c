@@ -121,7 +121,7 @@ void semp(){
 void spechdl(){
 	//~ tprint("spechdl\n");
 	extern pcb_t *currentPCB;
-	
+
 	if(currentPCB->specTrap[currentPCB->p_s.a2] != (memaddr)NULL) currentPCB->p_s.a1 = -1;
 	else {
 		currentPCB->specTrap[currentPCB->p_s.a2] = (memaddr)currentPCB->p_s.a3;
@@ -146,7 +146,7 @@ void gettime(){
 void waitclock(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	extern unsigned int softBlock;
+	extern unsigned int softBlock;//serve?
 
 	currentPCB->p_s.a2 = (memaddr)&semDev[CLOCK_SEM];
 	semp();
@@ -192,8 +192,7 @@ void getpids(){
 	if (currentPCB->p_parent == NULL) { /* root */
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = NULL;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;
-	}
-	else { /* process */
+	} else { /* process */
 		if ((pcb_t **)currentPCB->p_s.a2 != NULL) *(pcb_t **)currentPCB->p_s.a2 = currentPCB;
 		if ((pcb_t **)currentPCB->p_s.a3 != NULL) {
 			if (currentPCB->p_parent->p_parent == NULL) *(pcb_t **)currentPCB->p_s.a3 = NULL;	//if parent is root
@@ -202,13 +201,28 @@ void getpids(){
 	}
 }
 
-void waitchild(){
+int childsave = -1;
+
+int childcounter(pcb_t* father){
+    int ret = 0;
+    if (father->p_first_child != NULL) ret += childcounter(father->p_first_child);
+    if (father->p_sib != NULL) ret += childcounter(father->p_sib);
+    return (ret+1);
+}
+
+void waitchild(){ // previene dalla morte naturale?
 	//~ tprint("waitchild\n");
-	extern unsigned int softBlock;
+	extern unsigned int softBlock;//serve?
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;
-	if (currentPCB->p_first_child != NULL){
+
+	int child = childcounter(currentPCB)-1;
+    if (childsave == -1) childsave = child;
+
+	if ((child != 0)&&(child>=childsave)){
 		currentPCB->p_s.a2 = (unsigned int)&semWaitChild;
 		semp();
-	}
+	} else {
+        childsave=-1;
+    }
 }

@@ -16,8 +16,6 @@
 #include "syscall.h"
 #include "scheduler.h"
 
-void debugger(){}
-
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
@@ -33,14 +31,11 @@ void scheduler(){
 				slice = SLICE_TIME;
 				lastSlice = getTODLO();
 				if (currentPCB->activation_time == 0) currentPCB->activation_time = checkpoint;
-			}
-			else if (softBlock) {
+			} else if (softBlock) {
 				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
 				WAIT();
-			}
-			else PANIC();
-		}
-		else currentPCB->kernel_time += getTODLO() - checkpoint;
+			} else PANIC();
+		} else currentPCB->kernel_time += getTODLO() - checkpoint;
 
 		checkpoint = getTODLO();
 		setTIMER(MIN(slice,tick));
