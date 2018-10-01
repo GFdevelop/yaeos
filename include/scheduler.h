@@ -6,5 +6,6 @@
 #define TICK_TIME 100000
 
 void scheduler();
+void ager(pcb_t *readyPCB, void *args);
 
 #endif

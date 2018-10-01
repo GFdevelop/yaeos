@@ -28,7 +28,7 @@
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
-cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
+cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick, aging, lastAging;
 int semWaitChild;
 
 /* --- AUXILIARY FUNCTION --- */
@@ -69,7 +69,8 @@ int main() {
 	//5. Time vars initialization
 	slice = SLICE_TIME;
 	tick = TICK_TIME;
-	checkpoint = lastRecord = lastSlice = lastTick = getTODLO();
+	aging = AGING_TIME;
+	checkpoint = lastRecord = lastSlice = lastTick = lastAging = getTODLO();
 	//6. ...enjoy!
 	scheduler();
 	

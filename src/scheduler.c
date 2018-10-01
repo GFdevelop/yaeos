@@ -18,12 +18,17 @@
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
+	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick, aging, lastAging;
 	
 	if (processCount) {
 		if (currentPCB == NULL) {
 			if (headProcQ(readyQueue) != NULL) {
-				setTIMER(SLICE_TIME); //Prevent the process from being inserted back into readyQueue
+				setTIMER(TICK_TIME); //Prevent the process from being inserted back into readyQueue
+				if (getTODLO() > (aging + lastAging)) {
+					forallProcQ(readyQueue, ager, NULL);
+					aging = (lastAging + (2 * AGING_TIME)) - getTODLO();
+					lastAging = getTODLO();
+				}
 				
 				currentPCB = removeProcQ(&readyQueue);
 				
@@ -46,4 +51,8 @@ void scheduler(){
 	}
 	tprint("No process count\n");
 	HALT(); //1st case of deadlock detection, ProcessCount == 0 -> HALT()
+}
+
+void ager(pcb_t *readyPCB, void *args){
+	if (readyPCB->p_priority < MAX_PCB_PRIORITY) (readyPCB->p_priority)++;
 }
