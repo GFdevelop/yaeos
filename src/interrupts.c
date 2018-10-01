@@ -88,7 +88,7 @@ void timer_HDL(){
 
 void device_HDL(int deviceType){
 	unsigned int device_no = instanceNo(deviceType);
-	devreg_t *dev = DEV_REG_ADDR(deviceType,device_no);
+	devreg_t *dev = (devreg_t *)DEV_REG_ADDR(deviceType,device_no);
 
 	sendACK(dev, GENERIC, EXT_IL_INDEX(deviceType) * DEV_PER_INT +  device_no);
 }
@@ -182,7 +182,7 @@ void sendACK(devreg_t *device, int type, int index){
 		currentPCB->p_s.a2 = (unsigned int)&semDev[index];	// set value for semv()
 		semv();
 
-		if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
+		if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
 		else currentPCB->kernel_time += getTODLO() - checkpoint;
 
 		lastRecord = checkpoint = getTODLO();
