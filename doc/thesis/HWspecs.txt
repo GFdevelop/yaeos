@@ -4,7 +4,7 @@ uARM è composto da:
 - ARM7TDMI CPU
 - Coprocessore di sistema CP15 incorporato nel processore
 - RAM little-endian con memoria virtuale opzionale basata su TLB
-- Devives: fino a 8 istanze per ognuna delle 5 classi di risorse
+- Devices: fino a 8 istanze per ognuna delle 5 classi di risorse
 - Bus di sistema.
 
 --- PROCESSORE ---
@@ -49,4 +49,206 @@ Sebbene i 16 registri siano condivisi e general-purpouse ci sono alcune convenzi
 - CPSR - Current Program Status Register
 - SPSR_mode - CPSR salvato in precedenza
 
-Quando il processore usa Thumb come instrucion set, i registri sono ridotti a 12 
+Quando il processore usa Thumb come instrucion set, i registri sono ridotti a 12 per le modalità User/System e a 13 per le modalità protette. Va sempre aggiunto il registro CPSR, 
+comune  tutte le modalità.
+
+--- COPROCESSORE ---
+
+Il coprocessore CP15 da accesso ad un totale di 3 registri a 64 bit e 4 registri a 32 bit, i quali forniscono informazioni supplementari allo svolgimento delle normali operazioni.
+
+- Register 0 (IDC) - ID Codes
+	R0 è un registro read-only che contiene informazioni richieste dalle specifiche ARM
+- Register 1 (SCB) - System Control Bits
+	R1.SCB contiene dei flag di impostazione validi per tutto il sistema
+- Register 1 (CCB) - Cooprocessor Access Right
+	R1.CCB mostra i coprocessori disponibili nel sistema. Scrivendo su questo registro è possibile attivare e disattivare i coprocessori, ad esclusione di CP15 stesso.
+- Register 2 -  Page Table Entry
+	R2 è un registro a 64 bit che contiene le entry attive della Page Table quando la MMU è attiva.
+- Register 6 - Faulting Address
+	R6 è un registro di sola lettura che viene caricato quando si verifica un Page Fault Exception con l'indirizzo che ha causato l'errore.
+- Register 8 - TLB Random 
+	R8 è uno speciale registro di sola lettura usato per indicizzare randomicamente la TLB
+- Register 10 - TLB Index
+	R10 è uno speciale registro di sola lettura usato per indicizzare la TLB
+- Rgister 15 (Cause) - Exceeption Cause
+	R15.Cause contiene la causa che ha sollevato l'ultima ccezione nel sistema e può essere sia letto che scritto dal processore.
+
+		Memory error 	-> 1
+		Bus error 		-> 2 	 
+		Address error 	-> 3
+		Segment error 	-> 4
+		Page error 		-> 5
+
+- Register 15 (IPC) - Interrupt Cause
+	R15.IPC mostra le linee su cui ci sono deli interrupt in attesa e, dopo che la gestione dell'interrupt si è conclusa, il valore del registro è aggiornato.
+
+--- CONTROLLO DELL'ESECUZIONE ---
+
+Il comportamento del processore può essere modificato caambindo il contenuto di due speciali registri: CPSR (Current Program Status Register) e CP15.SCB (System Control Register).
+Ognuno di essi ha una struttura speciale e cambiano il modo in cui il sistema si comprt.
+
+- CURRENT PROGRAM STATUS REGISTER 
+	Il registro CPSR (così come il registro SPSR) è sempre accessibile tramite le istruzioni speciali MSR (copia CPSR in SPSR) e MRS (copia SPSR in CPSR).
+	Questo registro mostra i risultati addizionali delle istruzioni aritmetiche (codici dei flag di condizione) che permettono di attivare interrupt o cambiare lo stato/modo di 
+	esecuzione.
+
+	I primi 5 bit del CPSR sono utilizzati per settre il modo di esecuzione del processore, i possibili valori sono:
+
+		0x10 | User Mode
+		0x11 | Fast Interrupt Mode
+		0x12 | Interrupt Mode
+		0x13 | Supervisor Mode
+		0x17 | Abort Mode
+		0x1B | Undefined Mode
+		0x1F | System Mode
+
+	La User Mode è l'unica modalità non privilegiata, ciò significa che un processo in esecuzione in questa modalità non può accedere
+	a regioni riservate della memoria e non può modificare i bit di controllo del registro CPSR.
+	La System Mode è la modalità riservata alla normale esecuzione del kernel mentre, tutte le altre, vengono ttivate in risposta ad eccezioni sollevate dal sistema.
+
+- SYSTEM CONTROL REGISTER
+	Nel coprocessore di sistema è presente anche il System Control Register (CP15.R1) che controlla la memoria virtuale e l'esecuzione in modalità Thumb.
+
+--- GESTIONE DELLE ECCEZIONI ---
+
+Quando un'eccezione viene sollevata, il processore inizia automaticamente ad eseguire una routine speciale per rislvere il probema.
+In aggiunta agli strumenti di supporto a basso livello, il codice del BIOS implementa un wrapper che semplifica la gestione delle eccezoni a livello di sistema operativo.
+
+- GESTIONE A LIVELLO HARDWARE -
+	Ci sono 7 diversee eccezioni gestite dal processore, ognuna delle quali ha uno specifico indirizzo del bus al quale l'esecuzione salta subito dopo che l'eccezione è stata sollevata.
+	Quando un'eccezione viene sollevata, il processore viene forzatamente messo in modalità ARM, la modalità di esecuzione e il flag di interrupt sono settati in modo appropriato al tipo di eccezione,
+	nel registro LR vine posto l'indiirizzo di ritorno e il PC è caricato con l'indirizzo corretto del bus relativo al Vettore delle Eccezioni (Excpetion Vector). 
+	Se il Vettore delle Eccezioni è stato correttamente inizializzato, l'istruzione puntata dal PC sarà l'entry point di un qualche codice che gestisce l'errore.
+	Segue una breve descrizione delle eccezioni e dei differenti indirizzi di ritorno-
+
+	- Reset Exception
+		Eccezione sollevata automaticamente ogni volta che il sistema viene acceso.
+		Eccezione gestita in modalità Supervisor con tutti gli interrupt disabilitati.
+		I registri Link Return e SPSR hanno valori random.
+		L'esecuzione inizia all'indirizzo 0x0000.0000
+		La prima word del bus, quando l'esecuzione inizia, fa in modo che il processore salti subito all'inizio della ROM (indirizzo 0x0000.0300) dove è memorizzato il BIOS.
+
+	- Undefined Instruction Exception
+		Se una istruione de coprocessore non può essere eseguita da nessun coprcessore attualemnte disponibile, o se viene eseguita una istruzione UNDEFINED, viene sollevata questa eccezione.
+		Eccezione gestita in modalità Undefined con tutti gli interrupt normali disabilitati.
+		Il registro Link Return punta all'istruzione seguente a quella che ha causato questa eccezione.
+
+	- Software Interrupt Exception
+		Eccezione causata da una istruzione SWI (Software Interrupt istruction), pensata per fornire una via pulita per implementare le System Call.
+		Eccezione gestita in modalità Supervisor con tutti gli interrupt normali disabilitati.
+		Il registro Link Return punta all'istruzione seguente all'istruzione SWI che ha causato questa eccezione.
+
+	- Data Abort Exception
+		Eccezione sollevata quando il processore prva ad accedere ad un indirizzo di memoria non valido o non disponibile.
+		Eccezione gestita in modalità Abort con tutti gli interrupt normali disabilitati.
+		Il registro Link Return punta all'istruzione all'indirizzo che ha causato l'eccezione più 8.
+
+	- Prefetch Abort Exception
+		Eccezione sollevata quando il processore prova ad eseguire un'istruzione che ha generato un data abort durante la fase di fetch.
+		Eccezione gestita in modalità Undefined con tutti gli interrupt normali disabilitati.
+		Il registro Link Return punta all'istruzione seguente a quella che ha causato questa eccezione.
+
+	- Interrupt Request Exception
+		Eccezione sollevata da un devices quando necessita l'attenzione da parte della CPU.
+		Eccezione gestita in modalità Interrupt con tutti gli interrupt normali disabilitati.
+		Il registro Link Return punta all'istruzione non eseguita più 4.
+
+	- Fast Interrupt Request Exception
+		I Fast Interrupt hanno una priorità maggiore rispetto agli interrupt normali (ad esempio, l'Interval Timer è connesso a questa linea di interrupt).
+		Il valore dell'Interval Timer è decrementato ad ogni ciclo di esecuzione e viene richiesto un Fast Interrupt ogni volta che avviene un underflow nel valore (valore cambia da 0x0000.0000 a 0xFFFF.FFFF).
+		Eccezione gestita in modalità Fast Interrupt con tutti gli interrupt disabilitati.
+		Il registro Link Return punta all'istruzione non eseguita più 4.
+
+--- GESTORI DELLE ECCEZIONI ---
+
+- Gestione delle eccezioni a livello ROM
+	Durante la fase di bootstrap, sei dei sette registri del vettore delle eccezioni devon essere inizializzati. Il codice del BIOS riempie questi registri con delle operazioni di salto verso le procedure di gestione delle eccezioni.
+	I gestori a livello ROM forniscono una via sicura e automatica per accedere ai gestori a livello kernel da una locazione di memoria prefissata all'interno del Kernel Reserved Frame.
+	Mentre viene salvato lo stato del processore, tutti i gestori a livello ROM copiano il valore del registro Link Return nel registro Program Counter, rendendo più semplice la ripresa della normale esecuzione.
+	Questa è la gestione normale.
+	Alcuni specifici gestori forniscono delle funzionalità aggiuntive come di seguito descritto.
+
+	- Gestore Undefined Instruction
+		Nessun trattamento speciale richiesto.
+		Il suo gestore memorizza lo stato antecedente nell'area PGMT Old e carica lo stato presente nell'area PGMT New.
+
+	- Gestore Software Interrupt
+		I Software Interrupt riconosciuti dal BIOS possono essere di due tipi: System Call o Brekpoint. Il primo viene interpretato come un richiesta al kernel, il secondo può anche essere una richiesta di un servizio del BIOS.
+		Questo gestore è capace di riconoscere le richieste a servizi BIOS e servirli direttamente.
+		Se, invece, è richiesta una System Call o un Breakpoint non riconosciuto, il tutto viene gestito in modo normale.
+		Il vecchio stato del processore viene memorizzato nell'area Syscall Old e lo stato memorizzato nell'area Syscall New viene caricato.
+
+	- Gestore Data Abort e Prefetch Abort
+		L'eccezione viene tratta come una generica eccezione salvando lo stato nell'area TLB Old e caricando lo sttao presente nell'area TLB New.
+		Poiché i due tipi di eccezione hanno un offset differente, i gestori modificano il valore dell'indirizzo di ritorno memorizzato in TLB Old in modo da essere coerenti nella gestione. Questo è necessario poiché capire qual è il tipo di eccezione sollevata, a livello kernel, è impossibile senza conoscere la causa a livello hardware. La causa è data per dal registro CP15.Cause e della modalità di esecuzione, informazioni che possono andare perdute durante il pass-up.
+
+	- Gestore Interrupt e Fast Interrupt
+		Trattate entrambe come generiche eccezioni e trattate dal BIOS in modo normale salvando lo stato del processore nell'area Interrupt Old e caricaando quello presente nell'area Interrupt New.
+
+NOTE RIGUARDO ALLA SRITTURA DEI GESTORI
+Fare parecchia attenzione al valore del Program Counter nello stato del processore salvato nell'area Old. Come detto sopra, ogni eccezione lascia un valre differente nel registro Link Return e questo valore viene poi copiato automaticamente in Old.pc.
+Dunque, ad esempio, durante la gestione di Interrupt, Old.pc deve essere decrementato di 4 in modo da puntare all'istruzione di ritorno giusta. 
+
+--- BUS DI SISTEMA ---
+
+Il bus di sistema connette ogni componente del sistema e permette l'accesso alla memoria principale, ai device stessi e ad alcuni registri speciali.
+La CPU e il coprocessore di sistema CP15 possono accedere direttamente al bus leggendo o scrivendo daa/su specifici indirizzi.
+Gli indirizzi bassi (sotto 0x0000.8000) sono riservati e sono accessibili solamente sotto certe condizioni.
+
+- SPAZIO DI INDIRIZZAMENTO RISERVATO
+	L'area di memoria tra gli indirizzi 0x0000.0000 e 0x0000.8000 contiene il vettore dei fast interrupt, i registri di accesso ai device, i registri informativi di sistema, la ROM di bootstrap e il frame di memoria riservato al kernel (il primo frame di RAM). Ogni accesso a quest'area in modalità User è proibito e trattato dal bus come errore.
+	(/* foto esemplicativa reserved_mem.png */)
+
+	- VETTORE DELLE ECCEZIONI
+	I primi indiizzi del bus (0x0000.0000 -> 0x0000.001C) sono occupati dal vettore delle fast exceptions. Quando un'eccezione viene sollevata, il processore automaticamente cambia il valore del Program Counter per puntare uno di questi indirizzi. In questo modo, a patto che il sistema sia stato correttamente inizializzato, ogni istruzioni illegale porterà all'esecuzione del gestore adeguato al caso. Tipicamente questi indirizzi sono riempiti durante l'esecuzione della ROM di bootstrap. 
+	(/* foto esemplificativa exception_vect.png */) 
+
+	- VETTORE DEI DEVICE
+	Cinque word (0x0000.0020 -> 0x0000.0030) mostrano i device attivi nel sistema. Ogni word rappresenta una classe di device: per ogni parole, se l'i-esimo bit è a 1 vuol dire che l'i-esimo device di quella classe è attivo.
+
+	- REGISTRI DEI DEVICE
+	Gli indirizzi da 0x0000.0040 a 0x0000.02C0 contengono i registri dei device.
+
+	- REGISTRI INFORMATIVI DI SISTEMA
+	Sei registri, dall'indirizzo 0x0000.02D0 all'indirizzo 0x0000.02E4, contengono informazioni specifiche di sistema con l'interval timer, RAMTOP etc etc
+	(/* foto esemplificativa sysinfo_reg.png */)
+
+	- ROM DI BOOTSTRAP
+	La ROM di bootstrap è caricata a partire dall'indirizo 0x0000.0300 e la sua grandezza massima si attesta sui 109KB. Il contenuto della ROM è flashato ad ogni reboot dell'emulatore copiando ogni byte dell'immagine di input a partire dall'indirizzo di inizio della ROM.
+	Seione A.6.1 per maggiori dettagli sull'implementazione del BIOS.
+
+	- BITMAP DEGLI INTERRUPT PENDENTI
+	Tutti i device di una stessa classe ono collegati alla stessa linea di interrupt, quando uno di essi necessita di notificre qualche evento manda un messaggio attraverso la sua linea. Per identificare quale device sta rihiedendo una interruzione, ci sono 5 registri posti dall'indirizzo 0x0000.6FE0  all'indirizzo 0x0000.6FF0 che mantengono una bitmap dei device che possono richiedere una interruzione. Per ogni word, se l'i-esimo bit è messo a 1, l'i-esimo device della classe corrispondente sta richiedendo una interruzione.
+
+	- FRAME RISERVATO AL KERNEL
+	Il primo frame della memoria (0x0000.7000 -> 0x0000.7FFC) è riservato per il kernel.
+	(/* foto esemplificativa kernel_frame.png */)
+	L'area "Exception States Vector" è l'area di memoria in cui vengono salvati e da cui vengono caricati gli stati del processore quando si entra/esce dal codice dei gestori delle eccezioni. "Segment Table" contiene 128 elementi che descrivono lo spazio di indirizzamento virtuale. Per ogni ASID (un elemento della Segment Table) ci sono 3 puntatori alla ASID's page table.
+	Maggiori info alla sezione A.4.2
+
+	- STATI SALVATI DEL PROCESSORE
+	Lo stato del processore è definito dalla struttura state_t composta da 32 interi senza segno che rappresentano i valori dei registri della CPU e dei registri di controllo del coprocessore CP15.
+	(/* immagine esemplificativa state_t.png */)
+	Ognuna di queste strutture occupa 88 byte. Data questa grandezza, il codice del BIOS cercherà gli stati Old e New, per ogni eccezione, agli indirizzi in figura.
+	(/* immagine esemplificativa oldNew.png */).
+	Le aree New devono essere inizializzate durnte la fase di inizializzazione del kernel con degli stati validi del processore che puntano ai gestori delle rispettive eccezioni a livello kernel.
+
+--- SPAZIO DI INDIRIZZAMENTO DELLLA MEMORIA ---
+
+I rimanenti indirizzi, 0x0000.8000 -> RAMTOP, sono direttamente accessibili dalla CPU e dal coprocessore via bus di sistema ed è utilizzata come una normale RAM.
+
+--- BIOS ---
+
+	- SERVIZI DI LIVELLO ROM
+	I servizi a livello ROM vengono richiesti usando l'istruzione SWI (SoftWare Interrupt) con determinati parrametri e sono serviti dal codice del BIOS.
+
+		- HALT
+		Esegue SWI #1, il BIOS stamperà "SYSTEM HALTED" sul terminale 0 e spegnerà la macchina emulata.
+
+		- PANIC
+		Esegue SWI #2, il BIOS stamperà "KERNEL PANIC" sul terminale 0 e entrerà in un loop infinito.
+
+		-LDST
+		Esegue SWI #3 e inizierà a caricare lo stato del processore salvato nell'area di memoria puntata dall'inidirzzo nel registro a1.
+
+		-
