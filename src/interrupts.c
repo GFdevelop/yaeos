@@ -68,8 +68,9 @@ void timer_HDL(){
 		tick = (lastTick + (2 * TICK_TIME)) - getTODLO();
 		lastTick = getTODLO();
 	}
+	else tick = getTODLO() - (lastTick + tick);
 	
-	setTIMER(MIN(slice + lastSlice, tick + lastTick) - getTODLO());
+	setTIMER(MIN(slice, tick));
 }
 
 void device_HDL(int deviceType){
@@ -89,9 +90,9 @@ void terminal_HDL(){
 	
 	//2. Determinare se l'interrupt deriva da una scrittura, una lettura o entrambi
 	if((term->term.transm_status & DEV_TERM_STATUS) == DEV_TTRS_S_CHARTRSM){
-		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no + 1);	// odd for transm
+		sendACK(term, TRANSM, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + (terminal_no*2) + 1);	// odd for transm
 	}else if((term->term.recv_status & DEV_TERM_STATUS) == DEV_TRCV_S_CHARRECV){
-		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + terminal_no);		// even for recv
+		sendACK(term, RECV, EXT_IL_INDEX(INT_TERMINAL) * DEV_PER_INT + (terminal_no*2));		// even for recv
 	}
 }
 
