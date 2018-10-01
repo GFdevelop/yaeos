@@ -10,7 +10,7 @@ LIBS = $(addprefix lib,$(SRC))
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 AR = arm-none-eabi-ar
-CFLAGS = -mcpu=$(ARCH) -Wall
+CFLAGS = -mcpu=$(ARCH) -Wall -std=gnu11
 ifeq ($(shell uname),Darwin)
 	INC_DIR = /usr/local/include/uarm
 else
