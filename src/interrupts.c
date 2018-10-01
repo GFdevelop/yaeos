@@ -34,7 +34,6 @@ void intHandler(){
 	unsigned int cause = getCAUSE();
 
 	if(CAUSE_IP_GET(cause, INT_TIMER)) timer_HDL();
-	else if(CAUSE_IP_GET(cause, INT_LOWEST)) device_HDL(INT_LOWEST);
 	else if(CAUSE_IP_GET(cause, INT_DISK)) device_HDL(INT_DISK);
 	else if(CAUSE_IP_GET(cause, INT_TAPE)) device_HDL(INT_TAPE);
 	else if(CAUSE_IP_GET(cause, INT_UNUSED)) device_HDL(INT_UNUSED);
@@ -76,7 +75,7 @@ void timer_HDL(){
 	setTIMER(MIN(slice, tick));
 }
 
-void device_HDL(){
+void device_HDL(int type){
 	tprint("device_HDL\n");
 }
 
@@ -169,7 +168,7 @@ void sendACK(devreg_t *device, int type, int index){
 		currentPCB->p_s.a2 = (unsigned int)&semDev[index];	// set value for semv()
 		semv();
 		
-		if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
+		if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
 		else currentPCB->kernel_time += getTODLO() - checkpoint;
 		
 		lastRecord = checkpoint = getTODLO();
