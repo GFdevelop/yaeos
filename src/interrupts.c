@@ -54,6 +54,7 @@ void timer_HDL(){
 		if (currentPCB){
 			if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += checkpoint - lastRecord;
 			else currentPCB->kernel_time += checkpoint - lastRecord;
+			currentPCB->kernel_time += getTODLO() - checkpoint;
 			
 			insertProcQ(&readyQueue, currentPCB);
 			currentPCB = NULL;
@@ -137,7 +138,9 @@ unsigned int instanceNo(unsigned int device){
 
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type 
 void sendACK(devreg_t *device, int type, int index){
+	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
+	extern cpu_t checkpoint, lastRecord;
 	
 	switch (type) {
 		case TRANSM:
@@ -155,8 +158,18 @@ void sendACK(devreg_t *device, int type, int index){
 	}
 	
 	
-	if ((semDev[index]) < 0) {	// tprint don't lock any process, then we skip this
-		headBlocked(&semDev[index])->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
+	if ((semDev[index]) < 0) {	// fast interrupt (tprint) don't lock any process, then we skip this
+		pcb_t *blocked = headBlocked(&semDev[index]);
+		blocked->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
+		
+		if ((blocked->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) blocked->user_time += getTODLO() - checkpoint;
+		else blocked->kernel_time += getTODLO() - checkpoint;
+		
 		semv((memaddr)&semDev[index]);
+	}
+	else {
+		if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += checkpoint - lastRecord;
+		else currentPCB->kernel_time += checkpoint - lastRecord;
+		currentPCB->kernel_time += getTODLO() - checkpoint;
 	}
 }

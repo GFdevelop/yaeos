@@ -151,7 +151,6 @@ void waitclock(){
 void iodevop(){
 	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	//~ memaddr *cmd;
 	
 	int lineNo = LINENO(currentPCB->p_s.a3);
 	int devNo = ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
@@ -160,25 +159,6 @@ void iodevop(){
 	else *(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
 	
 	semp((memaddr)&semDev[EXT_IL_INDEX(lineNo) * DEV_PER_INT + devNo]);
-	
-	
-	//~ int lineNo = LINENO(currentPCB->p_s.a3);
-	
-	//~ int subDevNo = TERMNO(currentPCB->p_s.a3);
-	//~ int devNo = INDEVNO(subDevNo);
-	//~ devreg_t *device = (devreg_t *)DEV_REG_ADDR(lineNo, devNo);
-	
-	//~ if ((lineNo >= IL_DISK) && (lineNo < IL_TERMINAL)) cmd = &device->dtp.command;
-	//~ else {
-		//~ devNo = subDevNo;
-		//~ cmd = ( TERMTYPE(subDevNo) ) ? &device->term.transm_command : &device->term.recv_command;
-	//~ }
-	
-	//~ devNo += EXT_IL_INDEX(lineNo) * DEV_PER_INT;
-	
-	//~ currentPCB->p_s.a2 = (unsigned int)&semDev[devNo];
-	//~ semp();
-	//~ *cmd = ((state_t *)SYSBK_OLDAREA)->a2;
 }
 
 void getpids(){
