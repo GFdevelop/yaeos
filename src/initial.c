@@ -25,40 +25,13 @@
 #include "scheduler.h"
 #include "initial.h"
 
-
-//~ typedef struct {
-	//~ unsigned int a1; 			//r0: first function argument / integer result
-	//~ unsigned int a2; 			//r1: second function argument
-	//~ unsigned int a3; 			//r2: third function argument
-	//~ unsigned int a4; 			//r3: fourth function argument
-	//~ unsigned int v1; 			//r4: register variable
-	//~ unsigned int v2; 			//r5: register variable
-	//~ unsigned int v3; 			//r6: register variable
-	//~ unsigned int v4; 			//r7: register variable
-	//~ unsigned int v5; 			//r8: register variable
-	//~ unsigned int v6; 			//r9: (v6/rfp) register variable / real frame pointer
-	//~ unsigned int sl; 			//r10: stack limit
-	//~ unsigned int fp; 			//r11: frame pointer / argument pointer
-	//~ unsigned int ip; 			//r12: instruction pointer / temporary workspace
-	//~ unsigned int sp; 			//r13: stack pointer
-	//~ unsigned int lr; 			//r14: link register
-	//~ unsigned int pc; 			//r15: program counter
-	//~ unsigned int cpsr;			// current program status register, kernel mode cpsr[0-4]=0x1F	?!?!?
-	//~ unsigned int CP15_Control;	// virtual memory on/off, address resolution off CP15_Control[0]=0
-	//~ unsigned int CP15_EntryHi;	// Address Space Identifier (ASID)
-	//~ unsigned int CP15_Cause;	// cause of the PgmTrap exception
-	//~ unsigned int TOD_Hi;		// time of day, high bits
-	//~ unsigned int TOD_Low;		// time of day, low bits
-//~ } state_t;
-
-
 pcb_t *readyQueue, *currentPCB;
 unsigned int processCount, softBlock;
 int semDev[MAX_DEVICES];
 cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
 int semWaitChild;
 
-
+/* --- AUXILIARY FUNCTION --- */
 void newArea(memaddr address, void handler()){
 	state_t *area = (state_t *)address;
 	area->pc = (memaddr)handler;
@@ -70,21 +43,22 @@ void newArea(memaddr address, void handler()){
 
 
 int main() {
+	//1. New areas initialization
 	newArea(INT_NEWAREA,intHandler);
 	newArea(TLB_NEWAREA,tlbHandler);
 	newArea(PGMTRAP_NEWAREA,pgmtrapHandler);
 	newArea(SYSBK_NEWAREA,sysbkHandler);
-	
+	//2. Phase1 data structures initialization
 	initPcbs();
 	initASL();
-	
+	//3. System vars initialization
 	currentPCB = NULL;
 	processCount = 1;
 	softBlock = 0;
 	
 	for(int i = 0; i < MAX_DEVICES; i++) semDev[i] = 0;
 	semWaitChild = 0;
-	
+	//4. First process creation
 	readyQueue = allocPcb();
 	readyQueue->p_priority = 0;
 	readyQueue->p_s.cpsr = STATUS_SYS_MODE;
@@ -92,11 +66,11 @@ int main() {
 	readyQueue->p_s.CP15_Control = CP15_CONTROL_NULL;
 	readyQueue->p_s.sp = RAM_TOP-FRAME_SIZE;
 	readyQueue->p_s.pc = (memaddr)test;
-	
+	//5. Time vars initialization
 	slice = SLICE_TIME;
 	tick = TICK_TIME;
 	checkpoint = lastRecord = lastSlice = lastTick = getTODLO();
-	
+	//6. ...enjoy!
 	scheduler();
 	
 	return 0;
