@@ -78,7 +78,7 @@ void sysbkHandler(){
 	else currentPCB->kernel_time += getTODLO() - checkpoint;
 	lastRecord = checkpoint = getTODLO();
 	
-	if(CAUSE_EXCCODE_GET(currentPCB->p_s.CP15_Cause) == EXC_SYSCALL){
+	if ((CAUSE_EXCCODE_GET(currentPCB->p_s.CP15_Cause) & EXC_SYSCALL) == EXC_SYSCALL){
 		if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
 			SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
 			((state_t *)PGMTRAP_OLDAREA)->CP15_Cause = CAUSE_EXCCODE_SET(currentPCB->p_s.CP15_Cause, EXC_RESERVEDINSTR);
@@ -93,10 +93,10 @@ void sysbkHandler(){
 				terminateprocess();
 				break;
 			case(SEMV):
-				semv();
+				semv(currentPCB->p_s.a2);
 				break;
 			case(SEMP):
-				semp();
+				semp(currentPCB->p_s.a2);
 				break;
 			case(SPECHDL):
 				spechdl();
@@ -119,10 +119,7 @@ void sysbkHandler(){
 			default:
 				trapHandler(SYSBK_OLDAREA);
 		}
-	}else if(CAUSE_EXCCODE_GET(currentPCB->p_s.CP15_Cause) == EXC_BREAKPOINT){
-		tprint("BP\n");
-		trapHandler(SYSBK_OLDAREA);
-	}else PANIC();
+	}
 
 	scheduler();
 }

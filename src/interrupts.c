@@ -22,9 +22,9 @@
 
 void intHandler(){
 	extern pcb_t *currentPCB;
-	extern cpu_t checkpoint;
+	extern cpu_t checkpoint, lastRecord;
 
-	checkpoint = getTODLO();
+	checkpoint = getTODLO();	// if time slice is expired, checkpoint-lastRecord is the time to be add to PCB
 
 	if (currentPCB != NULL) {
 		((state_t *)INT_OLDAREA)->pc -= WORD_SIZE;
@@ -41,6 +41,7 @@ void intHandler(){
 	else if(CAUSE_IP_GET(cause, INT_TERMINAL)) terminal_HDL();
 	else PANIC();
 
+	lastRecord = checkpoint = getTODLO();
 	scheduler();
 }
 
@@ -59,26 +60,21 @@ void timer_HDL(){
 		if (currentPCB){
 			if ((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) currentPCB->user_time += checkpoint - lastRecord;
 			else currentPCB->kernel_time += checkpoint - lastRecord;
-			currentPCB->kernel_time += getTODLO() - checkpoint;
-			lastRecord = checkpoint = getTODLO();
 
 			insertProcQ(&readyQueue, currentPCB);
-			currentPCB = NULL;	// TODO: this can break pseudo clock, read down
+			currentPCB = NULL;
 		}
 		slice = (lastSlice + (2 * SLICE_TIME)) - getTODLO();
 		lastSlice = getTODLO();
 	}
 
 	if (getTODLO() >= (lastTick + tick)){
-		while ((semDev[CLOCK_SEM]) < 0) {
-			currentPCB->p_s.a2 = (unsigned int)&semDev[CLOCK_SEM];	// TODO: if currentPCB is NULL??? change semv()
-			semv();
-		}
+		while ((semDev[CLOCK_SEM]) < 0) semv((memaddr)&semDev[CLOCK_SEM]);
 		tick = (lastTick + (2 * TICK_TIME)) - getTODLO();
 		lastTick = getTODLO();
 	}
 
-	setTIMER(MIN(slice, tick));
+	setTIMER(MIN(slice + lastSlice, tick + lastTick) - getTODLO());
 }
 
 void device_HDL(int deviceType){
@@ -147,9 +143,7 @@ unsigned int instanceNo(unsigned int device){
 
 //Copia il comando ACK nel registro transm/recv.command del device specificato a seconda di type
 void sendACK(devreg_t *device, int type, int index){
-	extern pcb_t *currentPCB, *readyQueue;
 	extern int semDev[MAX_DEVICES];
-	extern cpu_t checkpoint, lastRecord;
 
 	switch (type) {
 		case TRANSM:
@@ -167,21 +161,8 @@ void sendACK(devreg_t *device, int type, int index){
 	}
 
 
-	// if readyQueue isn't empty the scheduler get the currentPCB from readyQueue and then execute the interrupt (before LDST ?!?)
-	// I write this code that use semv() because is good pratice not to write the same things in several places
-
 	if ((semDev[index]) < 0) {	// tprint don't lock any process, then we skip this
-		pcb_t *save = currentPCB;	// there is a process that start after this interrupt
-		currentPCB = headBlocked(&semDev[index]);
-		currentPCB->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
-		currentPCB->p_s.a2 = (unsigned int)&semDev[index];	// set value for semv()
-		semv();
-
-		if ((currentPCB->p_s.cpsr & STATUS_USER_MODE) == STATUS_USER_MODE) currentPCB->user_time += getTODLO() - checkpoint;
-		else currentPCB->kernel_time += getTODLO() - checkpoint;
-
-		lastRecord = checkpoint = getTODLO();
-
-		currentPCB = save;	// restore
+		headBlocked(&semDev[index])->p_s.a1 = ((state_t *)INT_OLDAREA)->a1;	// set return value in the right process
+		semv((memaddr)&semDev[index]);
 	}
 }

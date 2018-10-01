@@ -19,7 +19,7 @@
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	extern cpu_t checkpoint, slice, lastSlice, tick;
+	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
 
 	if (processCount){
 		if (currentPCB == NULL) {
@@ -28,8 +28,8 @@ void scheduler(){
 
 				currentPCB = removeProcQ(&readyQueue);
 
-				slice = SLICE_TIME;
 				lastSlice = getTODLO();
+				slice = SLICE_TIME;
 				if (currentPCB->activation_time == 0) currentPCB->activation_time = checkpoint;
 			} else if (softBlock) {
 				setSTATUS(STATUS_ALL_INT_ENABLE(getSTATUS()));
@@ -39,8 +39,8 @@ void scheduler(){
 		}
 		else currentPCB->kernel_time += getTODLO() - checkpoint;
 
-		checkpoint = getTODLO();
-		setTIMER(MIN(slice,tick));
+		lastRecord = checkpoint = getTODLO();
+		setTIMER(MIN(slice + lastSlice, tick + lastTick) - getTODLO());
 
 		LDST(&currentPCB->p_s);
 	}
