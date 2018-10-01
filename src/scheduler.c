@@ -21,7 +21,7 @@ void debugger(){}
 void scheduler(){
 	extern pcb_t *readyQueue, *currentPCB;
 	extern unsigned int processCount, softBlock;
-	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick;
+	extern cpu_t checkpoint, lastRecord, slice, lastSlice, tick, lastTick;
 	
 	if (processCount){
 		if (currentPCB == NULL) {
@@ -30,8 +30,8 @@ void scheduler(){
 				
 				currentPCB = removeProcQ(&readyQueue);
 				
-				slice = SLICE_TIME;
 				lastSlice = getTODLO();
+				slice = SLICE_TIME;
 				if (currentPCB->activation_time == 0) currentPCB->activation_time = checkpoint;
 			}
 			else if (softBlock) {
@@ -43,7 +43,7 @@ void scheduler(){
 		else currentPCB->kernel_time += getTODLO() - checkpoint;
 		
 		lastRecord = checkpoint = getTODLO();
-		setTIMER(MIN(slice,tick));
+		setTIMER(MIN(slice + lastSlice, tick + lastTick) - getTODLO());
 		
 		LDST(&currentPCB->p_s);
 	}
