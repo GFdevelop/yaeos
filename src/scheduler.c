@@ -45,7 +45,7 @@ void scheduler(){
 		else currentPCB->kernel_time += getTODLO() - checkpoint; //Process returning from a syscall or interrupt. Kernel time accounting.
 		
 		lastRecord = checkpoint = getTODLO(); //Time vars update 
-		setTIMER(MIN(slice, (lastTick + tick) - getTODLO())); //Setting the actual next slice
+		setTIMER(MIN((lastSlice + slice) - getTODLO(), (lastTick + tick) - getTODLO())); //Setting the actual next slice
 		
 		LDST(&currentPCB->p_s);
 	}

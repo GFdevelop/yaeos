@@ -69,7 +69,7 @@ void timer_HDL(){
 		lastTick = getTODLO();
 	}
 	
-	setTIMER(MIN(slice, (lastTick + tick) - getTODLO()));
+	setTIMER(MIN((lastSlice + slice) - getTODLO(), (lastTick + tick) - getTODLO()));
 }
 
 void device_HDL(int deviceType){
