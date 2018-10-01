@@ -9,7 +9,7 @@
 
 #define CLOCKINTERVAL   100000UL        /* interval to V clock semaphore */
 #define CLOCKLOOP               10
-#define MINCLOCKLOOP            5000
+#define MINCLOCKLOOP            3000
 
 #include <pcb.h>
 #include <asl.h>

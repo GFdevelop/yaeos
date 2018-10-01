@@ -41,55 +41,55 @@ void createprocess(){
 	}
 }
 
-void terminator(pcb_t *head){
+void T800(pcb_t *sarah){
 	extern pcb_t *currentPCB, *readyQueue;
 	extern unsigned int processCount, softBlock;
 	extern int semDev[MAX_DEVICES];
 	extern int semWaitChild;
 	
-	if (head->p_first_child != NULL) terminator(head->p_first_child);
+	while (sarah->p_first_child != NULL) T800(sarah->p_first_child);
 	
-	if (head->p_semKey != NULL) {
-		if ((head->p_semKey >= &semDev[0]) && (head->p_semKey <= &semDev[MAX_DEVICES - 1])) softBlock--;
-		if((*head->p_semKey) < 0) (*head->p_semKey)++;
-		outChildBlocked(head);
+	if (sarah->p_semKey != NULL) {
+		if ((sarah->p_semKey >= &semDev[0]) && (sarah->p_semKey <= &semDev[MAX_DEVICES - 1])) softBlock--;
+		if((*sarah->p_semKey) < 0) (*sarah->p_semKey)++;
+		outChildBlocked(sarah);
 	}
-	else if (head != currentPCB) outProcQ(&readyQueue, head);
+	else if (sarah != currentPCB) outProcQ(&readyQueue, sarah);
 	else currentPCB = NULL;
 	
-	if ((head->p_parent != NULL) && (head->p_parent->p_semKey == &semWaitChild)) {
-		outChildBlocked(head->p_parent);
-		insertProcQ(&readyQueue,head->p_parent);
+	if ((sarah->p_parent != NULL) && (sarah->p_parent->p_semKey == &semWaitChild)) {
+		outChildBlocked(sarah->p_parent);
+		insertProcQ(&readyQueue,sarah->p_parent);
 		semWaitChild++;
 	}
 	
-	outChild(head);
-	freePcb(head);
+	outChild(sarah);
+	freePcb(sarah);
 	processCount--;
 }
 
 void terminateprocess(){
 	extern pcb_t *currentPCB;
 	
-	pcb_t *head;
+	pcb_t *sarah;
 	
-	if ((pcb_t *)currentPCB->p_s.a2 == NULL) head = currentPCB;
-	else head = (pcb_t *)currentPCB->p_s.a2;
+	if ((pcb_t *)currentPCB->p_s.a2 == NULL) sarah = currentPCB;
+	else sarah = (pcb_t *)currentPCB->p_s.a2;
 	
-	terminator(head);
+	T800(sarah);
 	
 	if (currentPCB != NULL) {
-		if (head == NULL) currentPCB->p_s.a1 = 0;
+		if (sarah == NULL) currentPCB->p_s.a1 = 0;
 		else currentPCB->p_s.a1 = -1;
 	}
 }
 
-void semv(){
-	extern pcb_t *currentPCB, *readyQueue;
+void semv(memaddr semAddr){
+	extern pcb_t *readyQueue;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
 	
-	int *value = (int *)currentPCB->p_s.a2;
+	int *value = (int *)semAddr;
 	if ((*value)++ < 1) {
 		pcb_t *tmp = removeBlocked(value);
 		insertProcQ(&readyQueue, tmp);
@@ -97,13 +97,13 @@ void semv(){
 	}
 }
 
-void semp(){
+void semp(memaddr semAddr){
 	extern pcb_t *currentPCB;
 	extern unsigned int softBlock;
 	extern int semDev[MAX_DEVICES];
 	extern cpu_t checkpoint, lastRecord;
 	
-	int *value = (int *)currentPCB->p_s.a2;
+	int *value = (int *)semAddr;
 	if (--(*value) < 0) {
 		if (insertBlocked(value, currentPCB)) PANIC();
 		if ((value >= semDev) && (value <= &semDev[MAX_DEVICES - 1])) softBlock++;
@@ -143,12 +143,9 @@ void gettime(){
 
 
 void waitclock(){
-	extern pcb_t *currentPCB;
 	extern int semDev[MAX_DEVICES];
-	extern unsigned int softBlock;
 	
-	currentPCB->p_s.a2 = (memaddr)&semDev[CLOCK_SEM];
-	semp();
+	semp((memaddr)&semDev[CLOCK_SEM]);
 }
 
 void iodevop(){
@@ -159,11 +156,10 @@ void iodevop(){
 	int lineNo = LINENO(currentPCB->p_s.a3);
 	int devNo = ( lineNo == IL_TERMINAL ) ? TERMNO(currentPCB->p_s.a3) : DEVICENO(currentPCB->p_s.a3);
 	
-	/*if ((*((memaddr *)currentPCB->p_s.a3 - 1)) != DEV_S_READY) currentPCB->p_s.pc -= WORD_SIZE;		// -1 is status field
-	else */*(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
+	if ((*((memaddr *)currentPCB->p_s.a3 - 1)) != DEV_S_READY) currentPCB->p_s.pc -= WORD_SIZE;		// -1 is status field
+	else *(memaddr *)currentPCB->p_s.a3 = currentPCB->p_s.a2;
 	
-	currentPCB->p_s.a2 = (memaddr)&semDev[EXT_IL_INDEX(lineNo) * DEV_PER_INT + devNo];
-	semp();
+	semp((memaddr)&semDev[EXT_IL_INDEX(lineNo) * DEV_PER_INT + devNo]);
 	
 	
 	//~ int lineNo = LINENO(currentPCB->p_s.a3);
@@ -204,7 +200,6 @@ void waitchild(){
 	extern pcb_t *currentPCB;
 	extern int semWaitChild;
 	if (currentPCB->p_first_child != NULL){
-		currentPCB->p_s.a2 = (unsigned int)&semWaitChild;
-		semp();
+		semp((unsigned int)&semWaitChild);
 	}
 }

@@ -7,7 +7,7 @@
 
 void intHandler();
 void timer_HDL();
-void device_HDL();
+void device_HDL(int deviceType);
 void terminal_HDL();
 void SVST(state_t *A, state_t *B);
 unsigned int instanceNo(unsigned int device);

@@ -78,46 +78,47 @@ void sysbkHandler(){
 	else currentPCB->kernel_time += getTODLO() - checkpoint;
 	lastRecord = checkpoint = getTODLO();
 	
-	if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
-		SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
-		((state_t *)PGMTRAP_OLDAREA)->CP15_Cause = CAUSE_EXCCODE_SET(currentPCB->p_s.CP15_Cause, EXC_RESERVEDINSTR);
-		pgmtrapHandler();
-	}
-	
-	
-	switch(((state_t *)SYSBK_OLDAREA)->a1){
-		case(CREATEPROCESS):
-			createprocess();
-			break;
-		case(TERMINATEPROCESS):
-			terminateprocess();
-			break;
-		case(SEMV):
-			semv();
-			break;
-		case(SEMP):
-			semp();
-			break;
-		case(SPECHDL):
-			spechdl();
-			break;
-		case(GETTIME):
-			gettime();
-			break;
-		case(WAITCLOCK):
-			waitclock();
-			break;
-		case(IODEVOP):
-			iodevop();
-			break;
-		case(GETPIDS):
-			getpids();
-			break;
-		case(WAITCHLD):
-			waitchild();
-			break;
-		default:
-			trapHandler(SYSBK_OLDAREA);
+	if ((CAUSE_EXCCODE_GET(currentPCB->p_s.CP15_Cause) & EXC_SYSCALL) == EXC_SYSCALL){
+		if (((currentPCB->p_s.cpsr & STATUS_SYS_MODE) == STATUS_USER_MODE) && (currentPCB->p_s.a1 <= 10)){
+			SVST(&currentPCB->p_s,(state_t *)PGMTRAP_OLDAREA);
+			((state_t *)PGMTRAP_OLDAREA)->CP15_Cause = CAUSE_EXCCODE_SET(currentPCB->p_s.CP15_Cause, EXC_RESERVEDINSTR);
+			pgmtrapHandler();
+		}
+		
+		switch(((state_t *)SYSBK_OLDAREA)->a1){
+			case(CREATEPROCESS):
+				createprocess();
+				break;
+			case(TERMINATEPROCESS):
+				terminateprocess();
+				break;
+			case(SEMV):
+				semv(currentPCB->p_s.a2);
+				break;
+			case(SEMP):
+				semp(currentPCB->p_s.a2);
+				break;
+			case(SPECHDL):
+				spechdl();
+				break;
+			case(GETTIME):
+				gettime();
+				break;
+			case(WAITCLOCK):
+				waitclock();
+				break;
+			case(IODEVOP):
+				iodevop();
+				break;
+			case(GETPIDS):
+				getpids();
+				break;
+			case(WAITCHLD):
+				waitchild();
+				break;
+			default:
+				trapHandler(SYSBK_OLDAREA);
+		}
 	}
 	
 	scheduler();

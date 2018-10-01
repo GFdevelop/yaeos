@@ -30,8 +30,8 @@
 
 void createprocess();
 void terminateprocess();
-void semv();
-void semp();
+void semv(unsigned int semAddr);
+void semp(unsigned int semAddr);
 void spechdl();
 void gettime();
 void waitclock();
